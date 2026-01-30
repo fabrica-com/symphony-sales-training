@@ -54,7 +54,7 @@ bun dev
 ## プロジェクト構造
 
 ```
-symphony-sales-traning/
+symphony-sales-training/
 ├── app/                    # Next.js App Router
 │   ├── actions/           # Server Actions
 │   ├── api/               # API Routes
