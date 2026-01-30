@@ -21,6 +21,8 @@ Symphony営業研修システムのリポジトリです。
 
 - Node.js 18以上
 - pnpm または bun
+- Docker Desktop（ローカルSupabase開発用）
+- Supabase CLI
 
 ### インストール
 
@@ -30,6 +32,78 @@ pnpm install
 # または
 bun install
 ```
+
+### Supabase CLIのセットアップ
+
+ローカル開発環境でSupabaseを使用する場合は、Supabase CLIとDockerが必要です。
+
+#### 1. Supabase CLIのインストール
+
+```bash
+# macOS / Linux
+brew install supabase/tap/supabase
+
+# または npm経由
+npm install -g supabase
+```
+
+#### 2. Docker Desktopの起動
+
+Supabase CLIはDockerを使用してローカル環境を構築するため、Docker Desktopを起動しておく必要があります。
+
+#### 3. リモートSupabaseプロジェクトとのリンク
+
+```bash
+# Supabase CLIでログイン
+supabase login
+
+# リモートプロジェクトとリンク（プロジェクトIDが必要）
+supabase link --project-ref your-project-ref
+```
+
+#### 4. マイグレーションの取得
+
+リモートのマイグレーションをローカルに取得する場合：
+
+```bash
+# リモートのマイグレーション履歴を取得
+supabase db pull
+```
+
+#### 5. Edge Functionsの取得（使用している場合）
+
+```bash
+# リモートのEdge Functionsを取得
+supabase functions download
+```
+
+#### 6. ローカルSupabase環境の起動
+
+```bash
+# ローカルSupabaseを起動（Dockerコンテナが起動します）
+supabase start
+```
+
+起動後、以下の情報が表示されます：
+- **API URL**: `http://127.0.0.1:54321`
+- **Studio URL**: `http://127.0.0.1:54323`（管理画面）
+- **Anon Key**: ローカル開発用のキー
+
+#### 7. ローカル環境用の環境変数設定
+
+ローカルのSupabaseを使用する場合、`.env.local`に以下を設定してください：
+
+```env
+# ローカルSupabase設定
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase startで表示されるPublishable Key>
+SUPABASE_SERVICE_ROLE_KEY=<supabase startで表示されるSecret Key>
+
+# Google OAuth（ローカル開発用）
+SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET=<Google OAuth Client Secret>
+```
+
+**注意**: リモートのSupabaseを使用する場合は、リモートのURLとキーを設定してください。
 
 ### 環境変数
 
@@ -66,7 +140,8 @@ symphony-sales-training/
 ├── lib/                   # ユーティリティ・ヘルパー
 │   ├── db/               # データベース関連
 │   └── supabase/         # Supabaseクライアント
-├── scripts/              # SQLマイグレーションスクリプト
+├── supabase/             # Supabase設定
+│   └── migrations/       # データベースマイグレーション
 └── public/               # 静的ファイル
 ```
 
@@ -96,7 +171,35 @@ pnpm lint
 
 ## データベース
 
-Supabaseを使用しています。マイグレーションスクリプトは `scripts/` ディレクトリにあります。
+Supabaseを使用しています。マイグレーションスクリプトは `supabase/migrations/` ディレクトリにあります。
+
+### ローカル開発でのデータベース操作
+
+```bash
+# ローカルSupabaseの起動
+supabase start
+
+# ローカルSupabaseの停止
+supabase stop
+
+# ローカルデータベースのリセット（マイグレーションを再実行）
+supabase db reset
+
+# 新しいマイグレーションの作成
+supabase migration new migration_name
+
+# リモートにマイグレーションをプッシュ
+supabase db push
+
+# リモートのマイグレーションを取得
+supabase db pull
+```
+
+### Supabase Studio
+
+ローカルSupabase起動後、管理画面にアクセスできます：
+- URL: `http://127.0.0.1:54323`
+- データベースの確認、テーブルの編集、認証ユーザーの管理などが可能です
 
 ## ライセンス
 
