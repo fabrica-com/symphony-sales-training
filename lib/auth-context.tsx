@@ -56,6 +56,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
+  loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
   trainingLogs: TrainingLog[]
   userProgress: Map<number, UserProgress>
@@ -291,7 +292,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for Supabase auth changes
     const supabase = createClient()
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
+      if (event === "SIGNED_IN" && session?.user) {
+        // Handle OAuth sign-in (e.g., Google)
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single()
+        
+        const supabaseUser: User = {
+          id: session.user.id,
+          email: session.user.email || "",
+          name: profile?.full_name || session.user.user_metadata?.full_name || session.user.email || "",
+          department: profile?.department || "未設定",
+          joinDate: profile?.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+          role: profile?.role || "employee",
+          authType: "supabase",
+        }
+        
+        setUser(supabaseUser)
+        await loadUserDataFromDB(session.user.id)
+        console.log("[v0] Supabase Auth: OAuthログイン成功", session.user.email)
+      } else if (event === "SIGNED_OUT") {
         setUser(null)
         setTrainingLogs([])
         setUserProgress(new Map())
@@ -390,6 +412,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     console.log("[v0] Login failed: 認証失敗", email, error?.message)
     return false
+  }
+
+  const loginWithGoogle = async (): Promise<void> => {
+    const supabase = createClient()
+    
+    // Get the current origin (works for both local and production)
+    const redirectTo = `${window.location.origin}/auth/callback`
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+      },
+    })
+    
+    if (error) {
+      console.error("[v0] Google OAuth error:", error)
+      throw error
+    }
+    
+    // OAuth will redirect automatically, so we don't need to do anything else here
   }
 
   const logout = async () => {
@@ -546,6 +589,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         login,
+        loginWithGoogle,
         logout,
         trainingLogs,
         userProgress,
