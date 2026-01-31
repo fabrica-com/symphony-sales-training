@@ -1,29 +1,38 @@
 -- カテゴリC（業界知識：中古車ビジネス）の総合テストを作成
 -- 制限時間: 30分
 
--- まず既存のカテゴリAの時間を30分に更新
+-- まず既存のカテゴリAの時間を30分に更新（カテゴリAのテストが存在する場合のみ）
 UPDATE category_tests
 SET time_limit = 30
-WHERE category_id = 'A';
+WHERE category_id = 'A' AND EXISTS (SELECT 1 FROM training_categories WHERE id = 'A');
 
--- カテゴリCのテストを作成
-INSERT INTO category_tests (category_id, category_name, total_questions, passing_score, time_limit)
-VALUES ('C', '業界知識：中古車ビジネス', 20, 80, 30)
-ON CONFLICT (category_id) DO UPDATE SET
-  category_name = EXCLUDED.category_name,
-  total_questions = EXCLUDED.total_questions,
-  passing_score = EXCLUDED.passing_score,
-  time_limit = EXCLUDED.time_limit;
+-- カテゴリCのテストを作成（カテゴリCが存在する場合のみ）
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM training_categories WHERE id = 'C') THEN
+    INSERT INTO category_tests (category_id, category_name, total_questions, passing_score, time_limit)
+    VALUES ('C', '業界知識：中古車ビジネス', 20, 80, 30)
+    ON CONFLICT (category_id) DO UPDATE SET
+      category_name = EXCLUDED.category_name,
+      total_questions = EXCLUDED.total_questions,
+      passing_score = EXCLUDED.passing_score,
+      time_limit = EXCLUDED.time_limit;
+  END IF;
+END $$;
 
--- テストIDを取得して問題を挿入
+-- テストIDを取得して問題を挿入（カテゴリCが存在する場合のみ）
 DO $$
 DECLARE
   test_id INTEGER;
 BEGIN
-  SELECT id INTO test_id FROM category_tests WHERE category_id = 'C';
-  
-  -- 既存の問題を削除
-  DELETE FROM category_test_questions WHERE category_test_id = test_id;
+  -- カテゴリCが存在する場合のみテストIDを取得
+  IF EXISTS (SELECT 1 FROM training_categories WHERE id = 'C') THEN
+    SELECT id INTO test_id FROM category_tests WHERE category_id = 'C';
+    
+    -- test_idが存在する場合のみ問題を挿入
+    IF test_id IS NOT NULL THEN
+      -- 既存の問題を削除
+      DELETE FROM category_test_questions WHERE category_test_id = test_id;
   
   -- 問題1: 中古車流通の全体像（研修23）
   INSERT INTO category_test_questions (category_test_id, question_number, question, options, correct_answer, explanation, source)
@@ -204,5 +213,6 @@ BEGIN
     1,
     '認知的不協和（買った後の不安）を軽減するには、購入後のフォローで「良い選択だった」と確認させることが重要です。',
     '研修32: 顧客心理と購買行動');
-
-END $$;
+    END IF;
+  END IF;
+END $$;;

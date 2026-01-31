@@ -73,9 +73,17 @@ supabase db pull
 #### 5. Edge Functionsの取得（使用している場合）
 
 ```bash
-# リモートのEdge Functionsを取得
-supabase functions download
+# リモートのEdge Functions一覧を確認
+supabase functions list
+
+# 特定のEdge Functionをダウンロード（関数名を指定）
+supabase functions download <function-name>
+
+# 例: smooth-functionをダウンロードする場合
+supabase functions download smooth-function
 ```
+
+**注意**: `supabase functions download`は関数名を指定する必要があります。すべての関数を一括でダウンロードするコマンドはありません。
 
 #### 6. ローカルSupabase環境の起動
 
@@ -200,6 +208,86 @@ supabase db pull
 ローカルSupabase起動後、管理画面にアクセスできます：
 - URL: `http://127.0.0.1:54323`
 - データベースの確認、テーブルの編集、認証ユーザーの管理などが可能です
+
+## Edge Functions
+
+Supabase Edge Functionsを使用してサーバーレス関数を作成・デプロイできます。
+
+### ローカルでのEdge Functions開発
+
+#### 1. 新しいEdge Functionの作成
+
+```bash
+# 新しい関数を作成
+supabase functions new <function-name>
+
+# 例: my-functionという名前の関数を作成
+supabase functions new my-function
+```
+
+これにより、`supabase/functions/<function-name>/index.ts` が作成されます。
+
+#### 2. ローカルでEdge Functionsをテスト
+
+```bash
+# ローカルSupabaseを起動
+supabase start
+
+# すべてのEdge Functionsをローカルで実行（開発モード）
+supabase functions serve
+
+# 特定の関数のみを実行
+supabase functions serve <function-name>
+```
+
+ローカルで実行すると、`http://127.0.0.1:54321/functions/v1/<function-name>` でアクセスできます。
+
+#### 3. Edge Functionsのデプロイ
+
+**自動デプロイ（推奨）**
+
+mainブランチにマージされると、GitHub Actionsが自動的にすべてのEdge Functionsをデプロイします。
+
+**手動デプロイ**
+
+ローカルでテストした後、手動でデプロイする場合：
+
+```bash
+# リモートプロジェクトとリンク（初回のみ）
+supabase link --project-ref your-project-ref
+
+# 特定の関数をデプロイ
+supabase functions deploy <function-name>
+
+# 例: smooth-functionをデプロイ
+supabase functions deploy smooth-function
+
+# すべての関数をデプロイ
+supabase functions deploy
+```
+
+**GitHub Actionsの設定**
+
+自動デプロイを有効にするには、GitHubリポジトリのSecretsに以下を設定してください：
+
+1. GitHubリポジトリの「Settings」→「Secrets and variables」→「Actions」に移動
+2. 以下のSecretsを追加：
+   - `SUPABASE_ACCESS_TOKEN`: Supabaseのアクセストークン（`supabase login`で取得、または[Supabase Dashboard](https://supabase.com/dashboard/account/tokens)で生成）
+   - `SUPABASE_PROJECT_REF`: Supabaseプロジェクトの参照ID（プロジェクト設定から確認可能）
+
+#### 4. Edge Functionsの削除
+
+```bash
+# リモートから関数を削除
+supabase functions delete <function-name>
+```
+
+### Edge Functionsの開発のヒント
+
+- **型定義**: `import "jsr:@supabase/functions-js/edge-runtime.d.ts"` を追加すると、型補完が効きます
+- **環境変数**: `supabase/config.toml`の`[edge_runtime.secrets]`セクションで設定できます
+- **JWT認証**: デフォルトでJWT認証が有効です。無効にする場合は`--no-verify-jwt`フラグを使用
+- **デバッグ**: `supabase/config.toml`の`inspector_port`でChrome DevToolsを使用できます
 
 ## ライセンス
 
