@@ -1,25 +1,21 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import type { SupabaseClient } from "@supabase/supabase-js"
-
-// Use global to persist the singleton across requests
-const globalForSupabaseServer = globalThis as typeof globalThis & {
-  supabaseServerClient: SupabaseClient | undefined
-}
 
 /**
- * Creates a singleton Supabase server client
- * Caching is safe here as each request has its own context
+ * Creates a Supabase server client for each request
+ * 
+ * IMPORTANT: Do NOT cache this client in globalThis or any shared state.
+ * Each request has its own cookie context, and caching can cause PKCE code verifier
+ * mismatches between different requests/users.
+ * 
+ * Next.js will handle optimization internally, so creating a new client per request
+ * is the correct approach.
  */
 export async function createClient() {
-  // Return cached instance if available in this request context
-  if (globalForSupabaseServer.supabaseServerClient) {
-    return globalForSupabaseServer.supabaseServerClient
-  }
-
   const cookieStore = await cookies()
 
-  const client = createServerClient(
+  // Create a new client for each request to ensure proper cookie isolation
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -33,15 +29,12 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // This can fail - ignore silently
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have proxy refreshing
+            // user sessions.
           }
         },
       },
     }
   )
-
-  // Cache the instance
-  globalForSupabaseServer.supabaseServerClient = client
-
-  return client
 }
