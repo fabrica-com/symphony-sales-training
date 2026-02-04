@@ -14,11 +14,12 @@ function mapRowToSessionContent(row: Record<string, unknown>): SessionContent {
     infographic: row.infographic as SessionContent["infographic"],
     quickCheck: row.quick_check as SessionContent["quickCheck"],
     quote: row.quote as SessionContent["quote"],
-    simulation: row.simulation as SessionContent["simulation"],
-    reflection: row.reflection as SessionContent["reflection"],
-    actionOptions: row.action_options as SessionContent["actionOptions"],
-    work: row.work as SessionContent["work"],
-    deepDive: row.deep_dive as SessionContent["deepDive"],
+  simulation: row.simulation as SessionContent["simulation"],
+  roleplay: row.roleplay as SessionContent["roleplay"],
+  reflection: row.reflection as SessionContent["reflection"],
+  actionOptions: row.action_options as SessionContent["actionOptions"],
+  work: row.work as SessionContent["work"],
+  deepDive: row.deep_dive as SessionContent["deepDive"],
   }
 }
 

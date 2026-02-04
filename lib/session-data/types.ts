@@ -27,6 +27,21 @@ export interface SimulationScenario {
   }[]
 }
 
+export interface RoleplayScenario {
+  title: string
+  situation: string
+  seniorOpening?: string
+  customerProfile?: string
+  customerOpening?: string
+  dialogue: {
+    speaker: "senior" | "kenta" | "customer" | "sales"
+    line: string
+    hint?: string
+  }[]
+  keyPoints: string[]
+  successCriteria: string
+}
+
 export interface StoryScene {
   title: string
   content: string
@@ -70,6 +85,7 @@ export interface SessionContent {
     description: string
     fields: { label: string; placeholder: string }[]
   }
+  roleplay?: RoleplayScenario[]
   deepDive?: DeepDiveReading
 }
 
