@@ -70,23 +70,6 @@ export default function FinalExamPage() {
     fetchData()
   }, [])
 
-  // Timer
-  useEffect(() => {
-    if (phase !== "test" || timeRemaining <= 0) return
-
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          handleSubmitTest()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [phase, timeRemaining])
-
   const calculateScore = useCallback((answers: number[], exam: FinalExam) => {
     let correctCount = 0
     for (let i = 0; i < exam.questions.length; i++) {
@@ -129,6 +112,29 @@ export default function FinalExamPage() {
       }
     }
   }, [exam, answers, user, timeRemaining, calculateScore])
+
+  // Timer - moved after handleSubmitTest to avoid reference error
+  useEffect(() => {
+    if (phase !== "test" || timeRemaining <= 0) return
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [phase, timeRemaining])
+
+  // Auto-submit when time runs out
+  useEffect(() => {
+    if (phase === "test" && timeRemaining === 0 && exam) {
+      handleSubmitTest()
+    }
+  }, [phase, timeRemaining, exam, handleSubmitTest])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
