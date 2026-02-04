@@ -808,24 +808,23 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                 )}
 
                 {/* Dialogue progression */}
-                {console.log("[v0] Roleplay dialogue data:", sessionContent.roleplay[roleplayIndex].dialogue)}
                 {sessionContent.roleplay[roleplayIndex].dialogue?.slice(0, roleplayDialogueIndex + 1).map((item, idx) => {
-                  console.log("[v0] Dialogue item:", item, "speaker:", item.speaker)
-                  const isSalesOrKenta = item.speaker === "kenta" || item.speaker === "sales"
-                  const isSeniorOrCustomer = item.speaker === "senior" || item.speaker === "customer"
+                  const speaker = String(item.speaker).toLowerCase().trim()
+                  const isSenior = speaker === "senior" || speaker === "customer" || speaker === "先輩"
+                  const isKenta = speaker === "kenta" || speaker === "sales" || speaker === "健太"
                   return (
-                    <div key={idx} className={cn("flex gap-3", isSalesOrKenta && "flex-row-reverse")}>
+                    <div key={idx} className={cn("flex gap-3", isKenta && "flex-row-reverse")}>
                       <div className={cn(
                         "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-                        isSeniorOrCustomer 
+                        isSenior 
                           ? "bg-blue-100 dark:bg-blue-900/30" 
                           : "bg-green-100 dark:bg-green-900/30"
                       )}>
-                        <span className="text-xs font-medium">{isSeniorOrCustomer ? "先輩" : "健太"}</span>
+                        <span className="text-xs font-medium">{isSenior ? "先輩" : "健太"}</span>
                       </div>
                       <div className={cn(
                         "flex-1 rounded-lg p-3",
-                        isSeniorOrCustomer 
+                        isSenior 
                           ? "bg-blue-50 dark:bg-blue-900/20" 
                           : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
                       )}>
