@@ -808,7 +808,9 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                 )}
 
                 {/* Dialogue progression */}
+                {console.log("[v0] Roleplay dialogue data:", sessionContent.roleplay[roleplayIndex].dialogue)}
                 {sessionContent.roleplay[roleplayIndex].dialogue?.slice(0, roleplayDialogueIndex + 1).map((item, idx) => {
+                  console.log("[v0] Dialogue item:", item, "speaker:", item.speaker)
                   const isSalesOrKenta = item.speaker === "kenta" || item.speaker === "sales"
                   const isSeniorOrCustomer = item.speaker === "senior" || item.speaker === "customer"
                   return (
