@@ -26,11 +26,15 @@ function mapRowToSessionContent(row: Record<string, unknown>): SessionContent {
 export async function getSessionContentFromDB(trainingId: number): Promise<SessionContent | null> {
   const supabase = await createClient()
   
+  console.log("[v0] getSessionContentFromDB - fetching for trainingId:", trainingId)
+  
   const { data, error } = await supabase
     .from("session_contents")
     .select("*")
     .eq("training_id", trainingId)
     .single()
+
+  console.log("[v0] getSessionContentFromDB - result:", { hasData: !!data, error: error?.message || null })
 
   if (error || !data) {
     console.error(`[v0] Failed to fetch session content for training ${trainingId}:`, error)
