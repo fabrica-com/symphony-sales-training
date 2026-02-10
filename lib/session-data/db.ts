@@ -14,11 +14,12 @@ function mapRowToSessionContent(row: Record<string, unknown>): SessionContent {
     infographic: row.infographic as SessionContent["infographic"],
     quickCheck: row.quick_check as SessionContent["quickCheck"],
     quote: row.quote as SessionContent["quote"],
-    simulation: row.simulation as SessionContent["simulation"],
-    reflection: row.reflection as SessionContent["reflection"],
-    actionOptions: row.action_options as SessionContent["actionOptions"],
-    work: row.work as SessionContent["work"],
-    deepDive: row.deep_dive as SessionContent["deepDive"],
+  simulation: row.simulation as SessionContent["simulation"],
+  roleplay: row.roleplay as SessionContent["roleplay"],
+  reflection: row.reflection as SessionContent["reflection"],
+  actionOptions: row.action_options as SessionContent["actionOptions"],
+  work: row.work as SessionContent["work"],
+  deepDive: row.deep_dive as SessionContent["deepDive"],
   }
 }
 
@@ -26,11 +27,15 @@ function mapRowToSessionContent(row: Record<string, unknown>): SessionContent {
 export async function getSessionContentFromDB(trainingId: number): Promise<SessionContent | null> {
   const supabase = await createClient()
   
+  console.log("[v0] getSessionContentFromDB - fetching for trainingId:", trainingId)
+  
   const { data, error } = await supabase
     .from("session_contents")
     .select("*")
     .eq("training_id", trainingId)
     .single()
+
+  console.log("[v0] getSessionContentFromDB - result:", { hasData: !!data, error: error?.message || null })
 
   if (error || !data) {
     console.error(`[v0] Failed to fetch session content for training ${trainingId}:`, error)
