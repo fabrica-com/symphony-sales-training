@@ -268,6 +268,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
+  const loginWithGoogle = async (): Promise<void> => {
+    const supabase = createClient()
+    
+    // Get the current origin (works for both local and production)
+    const redirectTo = `${window.location.origin}/auth/callback`
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+      },
+    })
+    
+    if (error) {
+      console.error("[v0] Google OAuth error:", error)
+      throw error
+    }
+    
+    // OAuth will redirect automatically, so we don't need to do anything else here
+  }
+
   const logout = async () => {
     const supabaseClient = createClient()
     await supabaseClient.auth.signOut()
