@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { User, LayoutDashboard, LogIn, LogOut, Search, X } from "lucide-react"
@@ -9,8 +10,14 @@ import { useAuth } from "@/lib/auth-context"
 import { TrainingSearch } from "@/components/training-search"
 
 export function Header() {
+  const pathname = usePathname()
   const { user, logout } = useAuth()
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+
+  // ログインページではヘッダーを表示しない
+  if (pathname === "/login") {
+    return null
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -57,7 +64,7 @@ export function Header() {
               <div className="flex items-center gap-2">
                 <div className="hidden sm:flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{user.name}</span>
+                  <span className="font-medium">{user.name || user.email || "ユーザー"}</span>
                 </div>
                 <Button asChild variant="outline" size="sm">
                   <Link href="/dashboard">
