@@ -73,18 +73,6 @@ supabase db pull
 #### 5. Edge Functionsの取得（使用している場合）
 
 ```bash
-# リモートのEdge Functions一覧を確認
-supabase functions list
-
-# 特定のEdge Functionをダウンロード（関数名を指定）
-supabase functions download <function-name>
-
-# 例: smooth-functionをダウンロードする場合
-supabase functions download smooth-function
-```
-
-**注意**: `supabase functions download`は関数名を指定する必要があります。すべての関数を一括でダウンロードするコマンドはありません。
-
 #### 6. ローカルSupabase環境の起動
 
 ```bash
