@@ -24,6 +24,7 @@ export default async function SessionPage({
 
   // Supabaseからセッションコンテンツを取得
   const sessionContent = await getSessionContentFromDB(trainingId)
+  console.log("[v0] Session page - trainingId:", trainingId, "sessionContent:", sessionContent ? "found" : "not found")
 
   // セッションコンテンツがない場合は「準備中」ページを表示
   if (!sessionContent) {
