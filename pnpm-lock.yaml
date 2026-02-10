@@ -94,19 +94,19 @@ importers:
         version: 1.1.6(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@supabase/ssr':
         specifier: latest
-        version: 0.8.0(@supabase/supabase-js@2.93.2)
+        version: 0.8.0(@supabase/supabase-js@2.94.0)
       '@supabase/supabase-js':
         specifier: latest
-        version: 2.93.2
+        version: 2.94.0
       '@vercel/analytics':
         specifier: latest
         version: 1.6.1(next@16.0.10(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)
       ai:
         specifier: latest
-        version: 6.0.59(zod@3.25.76)
+        version: 6.0.69(zod@3.25.76)
       autoprefixer:
         specifier: ^10.4.20
-        version: 10.4.23(postcss@8.5.6)
+        version: 10.4.24(postcss@8.5.6)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -157,7 +157,7 @@ importers:
         version: 1.7.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       tailwind-merge:
         specifier: ^2.5.5
-        version: 2.6.0
+        version: 2.6.1
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.1.18)
@@ -173,7 +173,7 @@ importers:
         version: 4.1.18
       '@types/node':
         specifier: ^22
-        version: 22.19.7
+        version: 22.19.8
       '@types/react':
         specifier: ^19
         version: 19.2.10
@@ -186,29 +186,26 @@ importers:
       tailwindcss:
         specifier: ^4.1.9
         version: 4.1.18
-      tw-animate-css:
-        specifier: 1.3.3
-        version: 1.3.3
       typescript:
         specifier: ^5
         version: 5.9.3
 
 packages:
 
-  '@ai-sdk/gateway@3.0.27':
-    resolution: {integrity: sha512-Pr+ApS9k6/jcR3kNltJNxo60OdYvnVU4DeRhzVtxUAYTXCHx4qO+qTMG9nNRn+El1acJnNRA//Su47srjXkT/w==}
+  '@ai-sdk/gateway@3.0.32':
+    resolution: {integrity: sha512-7clZRr07P9rpur39t1RrbIe7x8jmwnwUWI8tZs+BvAfX3NFgdSVGGIaT7bTz2pb08jmLXzTSDbrOTqAQ7uBkBQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@4.0.10':
-    resolution: {integrity: sha512-VeDAiCH+ZK8Xs4hb9Cw7pHlujWNL52RKe8TExOkrw6Ir1AmfajBZTb9XUdKOZO08RwQElIKA8+Ltm+Gqfo8djQ==}
+  '@ai-sdk/provider-utils@4.0.13':
+    resolution: {integrity: sha512-HHG72BN4d+OWTcq2NwTxOm/2qvk1duYsnhCDtsbYwn/h/4zeqURu1S0+Cn0nY2Ysq9a9HGKvrYuMn9bgFhR2Og==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider@3.0.5':
-    resolution: {integrity: sha512-2Xmoq6DBJqmSl80U6V9z5jJSJP7ehaJJQMy2iFUqTay06wdCqTnPVBBQbtEL8RCChenL+q5DC5H5WzU3vV3v8w==}
+  '@ai-sdk/provider@3.0.7':
+    resolution: {integrity: sha512-VkPLrutM6VdA924/mG8OS+5frbVTcu6e046D2bgDo00tehBANR1QBJ/mPcZ9tXMFOsVcm6SQArOregxePzTFPw==}
     engines: {node: '>=18'}
 
   '@alloc/quick-lru@5.2.0':
@@ -1112,20 +1109,20 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@supabase/auth-js@2.93.2':
-    resolution: {integrity: sha512-uifI5vkhvHCQjn+LUPL5QlsuDMP4oVBD5SiliREgYuTJvCkbPLOcAPGrw88q7VUX9S0J0QuJn+37hrcTITisuw==}
+  '@supabase/auth-js@2.94.0':
+    resolution: {integrity: sha512-FPFx8DzEreSoLo2HVfwNY0p/uNQ9rONQp3VKw68UP8wg1YwXK5g+TM4d4U7LTGW4HqwG0rjUdQ1it7QPw09r2w==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/functions-js@2.93.2':
-    resolution: {integrity: sha512-reSp7yj4KmvAFfmN+N7vYsHXOIZQh9cmRBh+VrZlm7qgIIUdYmzKuD85TvFnWApqcdI2pPnuZGKWE/2B4GXT1A==}
+  '@supabase/functions-js@2.94.0':
+    resolution: {integrity: sha512-DAbIptT7e7hAvYHp4FhRH+LxxvKQ38QGxjaFHLoDoeQBqDaAbP/iu74dLOn6PIAnSRAqUkN2bKGs3awzNzBgKA==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/postgrest-js@2.93.2':
-    resolution: {integrity: sha512-W2AWDsYwRT217II5yD3jWaX3fJjB7DwyNi2KNi4sphdUI3DKY4fP2XYVDGfeb1clEFL18gw+GBhyQb3BcpNWkw==}
+  '@supabase/postgrest-js@2.94.0':
+    resolution: {integrity: sha512-3YKoDJu8VxvlJdCe2U2edzSQ9uArR0OLM3A4eAsS4QnIqzs+HuY5ZnubeoWnn/zRNeTENMLSXXZHAeMBPkyXew==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/realtime-js@2.93.2':
-    resolution: {integrity: sha512-YpAmJn7DLbMeYfQilcf3f0DKoY8O8TRbTF2oRpWFzHXTlEA+YWms8fBqM13Mf7RE72ouSNKDYyf5K2pWRSHvFw==}
+  '@supabase/realtime-js@2.94.0':
+    resolution: {integrity: sha512-TTPVttf4yMZTd0Jo65rIn4eyTAlI7XlwgB6OVEnne4Sz4VOddXPavEw4xRISOKJZ1n8ULLRz03hilMtqnj9gNg==}
     engines: {node: '>=20.0.0'}
 
   '@supabase/ssr@0.8.0':
@@ -1133,12 +1130,12 @@ packages:
     peerDependencies:
       '@supabase/supabase-js': ^2.76.1
 
-  '@supabase/storage-js@2.93.2':
-    resolution: {integrity: sha512-abRSVClfIQn+SqpdqL7S7b3VeyS8270/o0gqmGFtiidb7Lu0COsIV6Mor/mK9xE99KYWzyd37vwYYwv/jaANhw==}
+  '@supabase/storage-js@2.94.0':
+    resolution: {integrity: sha512-wLdfqKqSfdDgGbLqgsT8ssEELBaHJm1xwiymq3cvVgxcbjRR6ECtUGtA1kj0JvX/F9DiARbrk/zkIsQ+OaUVBg==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/supabase-js@2.93.2':
-    resolution: {integrity: sha512-G3bZZi6rPwXcPtyHLXQTeHKa5ADZ2UW/+hv8YhwZFwngz4TlPnR4+TeO37EwU5+d/reD02qXozOZgz+QHv1Jtg==}
+  '@supabase/supabase-js@2.94.0':
+    resolution: {integrity: sha512-KcqoA3ITW++CwoyCFxwV10npzR6wMfjKbMz87Q1PSuLw26SmHFQjjbBLvuZpzOrPoQ67on5W55irFsK8e0BhWg==}
     engines: {node: '>=20.0.0'}
 
   '@swc/helpers@0.5.15':
@@ -1259,8 +1256,8 @@ packages:
   '@types/d3-timer@3.0.2':
     resolution: {integrity: sha512-Ps3T8E8dZDam6fUyNiMkekK3XUsaUEik+idO9/YjPtfj2qruF8tFBXS7XhtE4iIXBLxhmLjP3SXpLhVf21I9Lw==}
 
-  '@types/node@22.19.7':
-    resolution: {integrity: sha512-MciR4AKGHWl7xwxkBa6xUGxQJ4VBOmPTF7sL+iGzuahOFaO0jHCsuEfS80pan1ef4gWId1oWOweIhrDEYLuaOw==}
+  '@types/node@22.19.8':
+    resolution: {integrity: sha512-ebO/Yl+EAvVe8DnMfi+iaAyIqYdK0q/q0y0rw82INWEKJOBe6b/P3YWE8NW7oOlF/nXFNrHwhARrN/hdgDkraA==}
 
   '@types/phoenix@1.6.7':
     resolution: {integrity: sha512-oN9ive//QSBkf19rfDv45M7eZPi0eEXylht2OLEXicu5b4KoQ1OzXIw+xDSGWxSxe1JmepRR/ZH283vsu518/Q==}
@@ -1306,8 +1303,8 @@ packages:
     resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
     engines: {node: '>= 20'}
 
-  ai@6.0.59:
-    resolution: {integrity: sha512-9SfCvcr4kVk4t8ZzIuyHpuL1hFYKsYMQfBSbBq3dipXPa+MphARvI8wHEjNaRqYl3JOsJbWxEBIMqHL0L92mUA==}
+  ai@6.0.69:
+    resolution: {integrity: sha512-zIURMSnNroaVvu47Bm3XhC2y3LRsm8jmkwBgupxF+N7q/s6MpIiv04w1ltlnWqC8+T2PT2rN+f0sUhF+vArkwg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1316,8 +1313,8 @@ packages:
     resolution: {integrity: sha512-ik3ZgC9dY/lYVVM++OISsaYDeg1tb0VtP5uL3ouh1koGOaUMDPpbFIei4JkFimWUFPn90sbMNMXQAIVOlnYKJA==}
     engines: {node: '>=10'}
 
-  autoprefixer@10.4.23:
-    resolution: {integrity: sha512-YYTXSFulfwytnjAPlw8QHncHJmlvFKtczb8InXaAx9Q0LbfDnfEYDE55omerIJKihhmU61Ft+cAOSzQVaBUmeA==}
+  autoprefixer@10.4.24:
+    resolution: {integrity: sha512-uHZg7N9ULTVbutaIsDRoUkoS8/h3bdsmVJYZ5l3wv8Cp/6UIIoRDm90hZ+BwxUj/hGBEzLxdHNSKuFpn8WOyZw==}
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
     peerDependencies:
@@ -1332,8 +1329,8 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
-  caniuse-lite@1.0.30001766:
-    resolution: {integrity: sha512-4C0lfJ0/YPjJQHagaE9x2Elb69CIqEPZeG0anQt9SIvIoOH4a4uaRl73IavyO+0qZh6MDLH//DrXThEYKHkmYA==}
+  caniuse-lite@1.0.30001767:
+    resolution: {integrity: sha512-34+zUAMhSH+r+9eKmYG+k2Rpt8XttfE4yXAjoZvkAPs15xcYQhyBYdalJ65BzivAvGRMViEjy6oKr/S91loekQ==}
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
@@ -1421,8 +1418,8 @@ packages:
   dom-helpers@5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
 
-  electron-to-chromium@1.5.279:
-    resolution: {integrity: sha512-0bblUU5UNdOt5G7XqGiJtpZMONma6WAfq9vsFmtn9x1+joAObr6x1chfqyxFSDCAFwFhCQDrqeAr6MYdpwJ9Hg==}
+  electron-to-chromium@1.5.286:
+    resolution: {integrity: sha512-9tfDXhJ4RKFNerfjdCcZfufu49vg620741MNs26a9+bhLThdB+plgMeou98CAaHu/WATj2iHOOHTp1hWtABj2A==}
 
   embla-carousel-react@8.5.1:
     resolution: {integrity: sha512-z9Y0K84BJvhChXgqn2CFYbfEi6AwEr+FFVVKm/MqbTQ2zIzO1VQri6w67LcfpVF0AjbhwVMywDZqY4alYkjW5w==}
@@ -1437,8 +1434,8 @@ packages:
   embla-carousel@8.5.1:
     resolution: {integrity: sha512-JUb5+FOHobSiWQ2EJNaueCNT/cQU9L6XWBbWmorWPQT9bkbk+fhsuLr8wWrzXKagO3oWszBO7MSx+GfaRk4E6A==}
 
-  enhanced-resolve@5.18.4:
-    resolution: {integrity: sha512-LgQMM4WXU3QI+SYgEc2liRgznaD5ojbmY3sb8LxyguVkIg5FxdpTkvk72te2R38/TGKxH634oLxXRGY6d7AP+Q==}
+  enhanced-resolve@5.19.0:
+    resolution: {integrity: sha512-phv3E1Xl4tQOShqSte26C7Fl84EwUdZsyOuSSk9qtAGyyQs2s3jJzComh+Abf4g187lUUAvH+H26omrqia2aGg==}
     engines: {node: '>=10.13.0'}
 
   escalade@3.2.0:
@@ -1751,8 +1748,8 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  tailwind-merge@2.6.0:
-    resolution: {integrity: sha512-P+Vu1qXfzediirmHOC3xKGAYeZtPcV9g76X+xg2FD4tYgR71ewMA35Y3sCz3zhiN/dwefRpJX0yBcgwi1fXNQA==}
+  tailwind-merge@2.6.1:
+    resolution: {integrity: sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ==}
 
   tailwindcss-animate@1.0.7:
     resolution: {integrity: sha512-bl6mpH3T7I3UFxuvDEXLxy/VuFxBk5bbzplh7tXI68mwMokNYd1t9qPBHlnyTwfa4JGC4zP516I1hYYtQ/vspA==}
@@ -1771,9 +1768,6 @@ packages:
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
-
-  tw-animate-css@1.3.3:
-    resolution: {integrity: sha512-tXE2TRWrskc4TU3RDd7T8n8Np/wCfoeH9gz22c7PzYqNPQ9FBGFbWWzwL0JyHcFp+jHozmF76tbHfPAx22ua2Q==}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -1840,21 +1834,21 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.27(zod@3.25.76)':
+  '@ai-sdk/gateway@3.0.32(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider': 3.0.5
-      '@ai-sdk/provider-utils': 4.0.10(zod@3.25.76)
+      '@ai-sdk/provider': 3.0.7
+      '@ai-sdk/provider-utils': 4.0.13(zod@3.25.76)
       '@vercel/oidc': 3.1.0
       zod: 3.25.76
 
-  '@ai-sdk/provider-utils@4.0.10(zod@3.25.76)':
+  '@ai-sdk/provider-utils@4.0.13(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider': 3.0.5
+      '@ai-sdk/provider': 3.0.7
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 3.25.76
 
-  '@ai-sdk/provider@3.0.5':
+  '@ai-sdk/provider@3.0.7':
     dependencies:
       json-schema: 0.4.0
 
@@ -2728,19 +2722,19 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@supabase/auth-js@2.93.2':
+  '@supabase/auth-js@2.94.0':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/functions-js@2.93.2':
+  '@supabase/functions-js@2.94.0':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/postgrest-js@2.93.2':
+  '@supabase/postgrest-js@2.94.0':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/realtime-js@2.93.2':
+  '@supabase/realtime-js@2.94.0':
     dependencies:
       '@types/phoenix': 1.6.7
       '@types/ws': 8.18.1
@@ -2750,23 +2744,23 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/ssr@0.8.0(@supabase/supabase-js@2.93.2)':
+  '@supabase/ssr@0.8.0(@supabase/supabase-js@2.94.0)':
     dependencies:
-      '@supabase/supabase-js': 2.93.2
+      '@supabase/supabase-js': 2.94.0
       cookie: 1.1.1
 
-  '@supabase/storage-js@2.93.2':
+  '@supabase/storage-js@2.94.0':
     dependencies:
       iceberg-js: 0.8.1
       tslib: 2.8.1
 
-  '@supabase/supabase-js@2.93.2':
+  '@supabase/supabase-js@2.94.0':
     dependencies:
-      '@supabase/auth-js': 2.93.2
-      '@supabase/functions-js': 2.93.2
-      '@supabase/postgrest-js': 2.93.2
-      '@supabase/realtime-js': 2.93.2
-      '@supabase/storage-js': 2.93.2
+      '@supabase/auth-js': 2.94.0
+      '@supabase/functions-js': 2.94.0
+      '@supabase/postgrest-js': 2.94.0
+      '@supabase/realtime-js': 2.94.0
+      '@supabase/storage-js': 2.94.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -2778,7 +2772,7 @@ snapshots:
   '@tailwindcss/node@4.1.18':
     dependencies:
       '@jridgewell/remapping': 2.3.5
-      enhanced-resolve: 5.18.4
+      enhanced-resolve: 5.19.0
       jiti: 2.6.1
       lightningcss: 1.30.2
       magic-string: 0.30.21
@@ -2868,7 +2862,7 @@ snapshots:
 
   '@types/d3-timer@3.0.2': {}
 
-  '@types/node@22.19.7':
+  '@types/node@22.19.8':
     dependencies:
       undici-types: 6.21.0
 
@@ -2884,7 +2878,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 22.19.7
+      '@types/node': 22.19.8
 
   '@vercel/analytics@1.6.1(next@16.0.10(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)':
     optionalDependencies:
@@ -2893,11 +2887,11 @@ snapshots:
 
   '@vercel/oidc@3.1.0': {}
 
-  ai@6.0.59(zod@3.25.76):
+  ai@6.0.69(zod@3.25.76):
     dependencies:
-      '@ai-sdk/gateway': 3.0.27(zod@3.25.76)
-      '@ai-sdk/provider': 3.0.5
-      '@ai-sdk/provider-utils': 4.0.10(zod@3.25.76)
+      '@ai-sdk/gateway': 3.0.32(zod@3.25.76)
+      '@ai-sdk/provider': 3.0.7
+      '@ai-sdk/provider-utils': 4.0.13(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       zod: 3.25.76
 
@@ -2905,10 +2899,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  autoprefixer@10.4.23(postcss@8.5.6):
+  autoprefixer@10.4.24(postcss@8.5.6):
     dependencies:
       browserslist: 4.28.1
-      caniuse-lite: 1.0.30001766
+      caniuse-lite: 1.0.30001767
       fraction.js: 5.3.4
       picocolors: 1.1.1
       postcss: 8.5.6
@@ -2919,12 +2913,12 @@ snapshots:
   browserslist@4.28.1:
     dependencies:
       baseline-browser-mapping: 2.9.19
-      caniuse-lite: 1.0.30001766
-      electron-to-chromium: 1.5.279
+      caniuse-lite: 1.0.30001767
+      electron-to-chromium: 1.5.286
       node-releases: 2.0.27
       update-browserslist-db: 1.2.3(browserslist@4.28.1)
 
-  caniuse-lite@1.0.30001766: {}
+  caniuse-lite@1.0.30001767: {}
 
   class-variance-authority@0.7.1:
     dependencies:
@@ -3003,7 +2997,7 @@ snapshots:
       '@babel/runtime': 7.28.6
       csstype: 3.2.3
 
-  electron-to-chromium@1.5.279: {}
+  electron-to-chromium@1.5.286: {}
 
   embla-carousel-react@8.5.1(react@19.2.0):
     dependencies:
@@ -3017,7 +3011,7 @@ snapshots:
 
   embla-carousel@8.5.1: {}
 
-  enhanced-resolve@5.18.4:
+  enhanced-resolve@5.19.0:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.0
@@ -3125,7 +3119,7 @@ snapshots:
     dependencies:
       '@next/env': 16.0.10
       '@swc/helpers': 0.5.15
-      caniuse-lite: 1.0.30001766
+      caniuse-lite: 1.0.30001767
       postcss: 8.4.31
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -3308,7 +3302,7 @@ snapshots:
       client-only: 0.0.1
       react: 19.2.0
 
-  tailwind-merge@2.6.0: {}
+  tailwind-merge@2.6.1: {}
 
   tailwindcss-animate@1.0.7(tailwindcss@4.1.18):
     dependencies:
@@ -3321,8 +3315,6 @@ snapshots:
   tiny-invariant@1.3.3: {}
 
   tslib@2.8.1: {}
-
-  tw-animate-css@1.3.3: {}
 
   typescript@5.9.3: {}
 
