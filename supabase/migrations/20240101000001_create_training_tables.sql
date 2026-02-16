@@ -97,3 +97,46 @@ CREATE POLICY "Allow authenticated update on deep_dive_contents"
   ON deep_dive_contents FOR UPDATE
   TO authenticated
   USING (true);
+
+-- Category tests table
+CREATE TABLE IF NOT EXISTS category_tests (
+  id SERIAL PRIMARY KEY,
+  category_id TEXT NOT NULL UNIQUE REFERENCES training_categories(id) ON DELETE CASCADE,
+  category_name TEXT NOT NULL,
+  total_questions INTEGER NOT NULL,
+  passing_score INTEGER NOT NULL,
+  time_limit INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Category test questions table
+CREATE TABLE IF NOT EXISTS category_test_questions (
+  id SERIAL PRIMARY KEY,
+  category_test_id INTEGER NOT NULL REFERENCES category_tests(id) ON DELETE CASCADE,
+  question_number INTEGER NOT NULL,
+  question TEXT NOT NULL,
+  options JSONB NOT NULL,
+  correct_answer INTEGER NOT NULL,
+  explanation TEXT NOT NULL,
+  source TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_category_test_questions_test ON category_test_questions(category_test_id);
+
+-- Enable RLS
+ALTER TABLE category_tests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE category_test_questions ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access
+CREATE POLICY "Allow public read access on category_tests"
+  ON category_tests FOR SELECT
+  TO public
+  USING (true);
+
+CREATE POLICY "Allow public read access on category_test_questions"
+  ON category_test_questions FOR SELECT
+  TO public
+  USING (true);

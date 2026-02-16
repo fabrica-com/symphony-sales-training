@@ -53,15 +53,10 @@ function DashboardPage() {
     })
   }, [])
 
-  // Check authentication status
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login")
-    }
-  }, [user, isLoading, router])
-
-  // Show loading or redirect state
-  if (isLoading || !user) {
+  // Show loading state while AuthContext initializes
+  // Note: Authentication is now handled by proxy.ts middleware,
+  // so we only need to show loading while user data is being fetched
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -70,6 +65,11 @@ function DashboardPage() {
         </div>
       </div>
     )
+  }
+  
+  // user がいない場合の予備ガード（通常は middleware で弾かれるため、ここは保険）
+  if (!user) {
+    return null; 
   }
 
   const handleLogout = () => {
@@ -99,7 +99,7 @@ function DashboardPage() {
     if (!category) return { completed: 0, total: 0, percentage: 0 }
 
     const trainingIds = category.trainings.map((t) => t.id)
-    const completed = trainingIds.filter((id) => userProgress.has(id)).length
+    const completed = trainingIds.filter((id) => !!userProgress[id]).length
     const total = trainingIds.length
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
@@ -130,7 +130,7 @@ function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-2">おかえりなさい、{user.name}さん</h1>
+          <h1 className="text-2xl font-bold mb-2">おかえりなさい、{user.name || user.email || "ユーザー"}さん</h1>
           <p className="text-muted-foreground">今日も学習を続けましょう。あなたの成長を応援しています。</p>
         </div>
 

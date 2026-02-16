@@ -28,14 +28,17 @@ CREATE INDEX IF NOT EXISTS idx_session_contents_training_id ON session_contents(
 -- RLSポリシーの設定
 ALTER TABLE session_contents ENABLE ROW LEVEL SECURITY;
 
--- 全ユーザーが読み取り可能
+-- 一度削除する命令を追加（これで二重定義エラーを防ぐ）
+DROP POLICY IF EXISTS "session_contents_read_policy" ON session_contents;
 CREATE POLICY "session_contents_read_policy" ON session_contents
   FOR SELECT USING (true);
 
--- 管理者のみ更新可能（将来の拡張用）
+-- こっちも念のため、削除命令を入れておくと安全です
+DROP POLICY IF EXISTS "session_contents_insert_policy" ON session_contents;
 CREATE POLICY "session_contents_insert_policy" ON session_contents
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "session_contents_update_policy" ON session_contents;
 CREATE POLICY "session_contents_update_policy" ON session_contents
   FOR UPDATE USING (true);
 
