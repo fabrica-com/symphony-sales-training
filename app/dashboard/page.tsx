@@ -219,10 +219,10 @@ function DashboardPage() {
                             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                           >
                             <div
-                              className="flex h-10 w-10 items-center justify-center rounded-lg text-lg"
+                              className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
                               style={{ backgroundColor: category.color + "20", color: category.color }}
                             >
-                              {category.icon}
+                              {category.id}
                             </div>
                             <div>
                               <p className="font-medium">{category.name}</p>
@@ -291,10 +291,10 @@ function DashboardPage() {
                         >
                           <div className="flex items-center gap-3">
                             <div
-                              className="flex h-10 w-10 items-center justify-center rounded-lg text-lg"
+                              className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
                               style={{ backgroundColor: category.color + "20", color: category.color }}
                             >
-                              {category.icon}
+                              {category.id}
                             </div>
                             <div>
                               <p className="font-medium">{category.name}</p>
@@ -315,10 +315,10 @@ function DashboardPage() {
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="flex h-10 w-10 items-center justify-center rounded-lg text-lg"
+                            className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
                             style={{ backgroundColor: category.color + "20", color: category.color }}
                           >
-                            {category.icon}
+                            {category.id}
                           </div>
                           <div>
                             <p className="font-medium">{category.name}</p>
@@ -515,10 +515,7 @@ function DashboardPage() {
                           <div className="flex items-center gap-3">
                             <div
                               className="flex h-8 w-8 items-center justify-center rounded text-sm font-bold"
-                              style={{
-                                backgroundColor: category?.color + "20",
-                                color: category?.color,
-                              }}
+                              style={category ? { backgroundColor: category.color + "20", color: category.color } : undefined}
                             >
                               {odaiNumber}
                             </div>
