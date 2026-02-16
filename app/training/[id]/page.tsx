@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, Quote, Play, Settings, Construction, Sparkles } from "lucide-react"
+import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, Quote, Play, Construction, Sparkles } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -261,20 +261,6 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">管理者設定</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Link href={`/training/${training.id}/prompts`}>
-                      <Button variant="outline" className="w-full bg-transparent">
-                        <Settings className="h-4 w-4 flex-shrink-0" />
-                        <span>プロンプト編集</span>
-                      </Button>
-                    </Link>
-                    <p className="text-xs text-muted-foreground mt-2">ロープレ・評価用プロンプトを編集</p>
-                  </CardContent>
-                </Card>
               </div>
             </div>
           </div>
