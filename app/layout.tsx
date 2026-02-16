@@ -1,13 +1,26 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import localFont from "next/font/local"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/lib/auth-context"
 import { Header } from "@/components/header"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const geist = localFont({
+  variable: "--font-geist-sans",
+  display: "swap",
+  src: [
+    { path: "./fonts/Geist-latin-variable.woff2", weight: "100 900", style: "normal" },
+  ],
+})
+
+const geistMono = localFont({
+  variable: "--font-geist-mono",
+  display: "swap",
+  src: [
+    { path: "./fonts/GeistMono-latin-variable.woff2", weight: "100 900", style: "normal" },
+  ],
+})
 
 export const metadata: Metadata = {
   title: "Symphony研修プログラム | ファブリカホールディングス",
@@ -22,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body className={`font-sans antialiased`}>
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
         <AuthProvider>
           <Header />
           {children}
