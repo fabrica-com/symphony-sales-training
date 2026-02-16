@@ -1,6 +1,6 @@
 "use server"
 
-import { finalExamData } from "@/lib/final-exam-data"
+import { getFinalExamFromDb } from "@/lib/db/categories"
 import { createClient } from "@/lib/supabase/server"
 
 export interface FinalExamResult {
@@ -16,7 +16,7 @@ export interface FinalExamResult {
 
 // 修了テストデータを取得
 export async function getFinalExamAction() {
-  return finalExamData
+  return await getFinalExamFromDb()
 }
 
 // 修了テスト結果を保存

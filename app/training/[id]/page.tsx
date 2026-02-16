@@ -8,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { levelColors } from "@/lib/training-data"
 import { TrainingResultsClient } from "@/components/training-results-client"
 import { getSessionContentFromDB } from "@/lib/session-data"
-import { getDeepDiveContent } from "@/lib/deep-dive-content"
-import { getTrainingByIdFromDb } from "@/lib/db/categories"
+import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
 import { TrainingResults } from "@/components/training-results"
 import { HighlightText, HighlightListItem } from "@/components/training-content-highlighter"
 
@@ -34,7 +33,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
   const sessionContent = await getSessionContentFromDB(training.id)
   const hasSessionContent = sessionContent !== null && sessionContent !== undefined
 
-  const deepDiveContent = getDeepDiveContent(training.id)
+  const deepDiveContent = await getDeepDiveContentFromDb(training.id)
   const hasDeepDive = deepDiveContent !== null && deepDiveContent !== undefined
 
   const trainingResults = [] // Declare trainingResults variable
