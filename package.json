@@ -6,7 +6,9 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "db:check": "bun run scripts/check-db.ts",
+    "db:sync": "bun run scripts/sync-remote-to-local.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
