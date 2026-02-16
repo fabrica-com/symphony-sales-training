@@ -62,7 +62,7 @@ export default async function PromptPage({ params }: PromptPageProps) {
           <div className="mx-auto max-w-5xl px-4">
             <PasswordGate
               title="プロンプト編集権限"
-              description="プロンプト編集機能にアクセスするには管理者パスワードが必要です"
+              description="プロンプト編集機能にアクセスするには、管理者アカウントでのGoogleログインが必要です"
             >
               <PromptEditor trainingId={training.id} initialPromptData={promptData} />
             </PasswordGate>

@@ -2,12 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { Lock, Eye, EyeOff } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Lock } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { useAuth } from "@/lib/auth-context"
 
 interface PasswordGateProps {
   children: React.ReactNode
@@ -15,29 +12,18 @@ interface PasswordGateProps {
   description?: string
 }
 
-const ADMIN_PASSWORD = "symphony2024" // 本番環境では環境変数から取得することを推奨
-
 export function PasswordGate({
   children,
-  title = "管理者認証",
-  description = "この機能にアクセスするには管理者パスワードが必要です",
+  title = "管理者権限が必要です",
+  description = "この機能にアクセスするには管理者アカウントでログインしてください",
 }: PasswordGateProps) {
-  const [password, setPassword] = useState("")
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [error, setError] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
+  const { user, isLoading } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true)
-      setError("")
-    } else {
-      setError("パスワードが正しくありません")
-    }
+  if (isLoading) {
+    return null
   }
 
-  if (isAuthenticated) {
+  if (user?.role === "admin") {
     return <>{children}</>
   }
 
@@ -51,37 +37,7 @@ export function PasswordGate({
           <CardTitle className="text-2xl">{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">パスワード</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="管理者パスワードを入力"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setError("")
-                  }}
-                  className={error ? "border-destructive" : ""}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-            </div>
-            <Button type="submit" className="w-full">
-              認証する
-            </Button>
-          </form>
-        </CardContent>
+        <CardContent />
       </Card>
     </div>
   )
