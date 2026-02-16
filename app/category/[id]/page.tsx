@@ -5,8 +5,7 @@ import { Footer } from "@/components/footer"
 import { TrainingItem } from "@/components/training-item"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getCategoryByIdFromDb } from "@/lib/db/categories"
-import { getCategoryTest } from "@/lib/test-data"
+import { getCategoryByIdFromDb, getCategoryTestFromDb } from "@/lib/db/categories"
 import Header from "@/components/header"
 
 interface CategoryPageProps {
@@ -20,7 +19,7 @@ export const dynamic = "force-dynamic"
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { id } = await params
   const category = await getCategoryByIdFromDb(id)
-  const categoryTest = getCategoryTest(id)
+  const categoryTest = await getCategoryTestFromDb(id)
 
   if (!category) {
     notFound()

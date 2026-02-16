@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -26,7 +26,8 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
-import { categories } from "@/lib/training-data"
+import type { Category } from "@/lib/training-data"
+import { getAllCategoriesWithTrainingsAction } from "@/app/actions/category-actions"
 
 function DashboardPage() {
   const router = useRouter()
@@ -43,13 +44,14 @@ function DashboardPage() {
     getProgressPercentage,
   } = useAuth()
 
-  // Debug logs
+  const [categories, setCategories] = useState<Category[]>([])
+
+  // Load categories from DB
   useEffect(() => {
-    console.log("[v0] Dashboard - trainingLogs length:", trainingLogs.length)
-    console.log("[v0] Dashboard - trainingLogs data:", trainingLogs)
-    console.log("[v0] Dashboard - userProgress size:", userProgress.size)
-    console.log("[v0] Dashboard - user:", user)
-  }, [trainingLogs, userProgress, user])
+    getAllCategoriesWithTrainingsAction().then((data) => {
+      setCategories(data as Category[])
+    })
+  }, [])
 
   // Check authentication status
   useEffect(() => {

@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server"
 import { unstable_noStore as noStore } from "next/cache"
 import type { Category } from "@/lib/training-data"
 import type { DbCategory } from "@/lib/db/types"
-import { getDeepDiveContent } from "@/lib/deep-dive-content"
 
 // DBのカテゴリをフロントエンドの型に変換（同期関数、クライアントからは呼び出さない）
 function mapDbCategoryToCategory(dbCategory: DbCategory, trainings: Category["trainings"] = []): Category {
@@ -214,21 +213,6 @@ export async function getDeepDiveContentFromDb(trainingId: number): Promise<Deep
     .single()
 
   if (error || !data) {
-    // データベースにない場合はローカルコンテンツをフォールバック
-    const localContent = getDeepDiveContent(trainingId)
-    if (localContent) {
-      return {
-        id: trainingId,
-        trainingId: trainingId,
-        title: localContent.title,
-        subtitle: localContent.subtitle,
-        introduction: localContent.introduction,
-        sections: localContent.sections,
-        conclusion: localContent.conclusion,
-        references: localContent.references || null,
-      }
-    }
-    console.error("Error fetching deep dive content:", error)
     return null
   }
 
@@ -340,4 +324,63 @@ export async function getAllTestCategoryIds(): Promise<{ id: string }[]> {
   }
 
   return data.map((d) => ({ id: d.category_id }))
+}
+
+// 修了テスト型定義
+export interface FinalExamQuestion {
+  id: number
+  question: string
+  options: string[]
+  correctAnswer: number
+  explanation: string
+  source: string
+  difficulty: "basic" | "intermediate" | "advanced"
+}
+
+export interface FinalExam {
+  totalQuestions: number
+  passingScore: number
+  timeLimit: number
+  questions: FinalExamQuestion[]
+}
+
+// 修了テストを取得
+export async function getFinalExamFromDb(): Promise<FinalExam | null> {
+  const supabase = await createClient()
+
+  const { data: config, error: configError } = await supabase
+    .from("final_exam_config")
+    .select("*")
+    .eq("id", 1)
+    .single()
+
+  if (configError || !config) {
+    console.error("Error fetching final exam config:", configError)
+    return null
+  }
+
+  const { data: questions, error: questionsError } = await supabase
+    .from("final_exam_questions")
+    .select("*")
+    .order("question_number")
+
+  if (questionsError || !questions) {
+    console.error("Error fetching final exam questions:", questionsError)
+    return null
+  }
+
+  return {
+    totalQuestions: config.total_questions,
+    passingScore: config.passing_score,
+    timeLimit: config.time_limit,
+    questions: questions.map((q) => ({
+      id: q.question_number,
+      question: q.question,
+      options: q.options as string[],
+      correctAnswer: q.correct_answer,
+      explanation: q.explanation,
+      source: q.source,
+      difficulty: q.difficulty as "basic" | "intermediate" | "advanced",
+    })),
+  }
 }

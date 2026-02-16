@@ -27,8 +27,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { Training, Category } from "@/lib/training-data"
-import type { SessionContent } from "@/lib/session-data/types"
-import { getDeepDiveContent } from "@/lib/deep-dive-content"
+import type { SessionContent, DeepDiveReading } from "@/lib/session-data/types"
 import { useAuth } from "@/lib/auth-context"
 
 type SessionPhase =
@@ -74,9 +73,10 @@ interface SessionClientProps {
   training: Training
   category: Category
   sessionContent: SessionContent
+  deepDiveContent?: DeepDiveReading | null
 }
 
-export function SessionClient({ training, category, sessionContent }: SessionClientProps) {
+export function SessionClient({ training, category, sessionContent, deepDiveContent: deepDiveContentProp }: SessionClientProps) {
   const { user, addTrainingLog } = useAuth()
   const [currentPhase, setCurrentPhase] = useState<SessionPhase>("checkin")
   const [points, setPoints] = useState(0)
@@ -136,7 +136,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const deepDiveContent = getDeepDiveContent(training.id)
+  const deepDiveContent = deepDiveContentProp ?? null
 
   const goToNextPhase = () => {
     const currentIndex = phaseOrder.indexOf(currentPhase)
