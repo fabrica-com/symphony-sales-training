@@ -30,6 +30,7 @@ export interface TrainingLog {
   moodEmoji?: string
   moodLabel?: string
   reflectionText?: string
+  workAnswers?: { label: string; value: string }[]
 }
 
 export interface UserProgress {
@@ -313,6 +314,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       moodEmoji: log.moodEmoji,
       moodLabel: log.moodLabel,
       reflectionText: log.reflectionText,
+      workAnswers: log.workAnswers,
     })
   }
 

@@ -16,6 +16,7 @@ export async function saveTrainingSession(data: {
   moodEmoji?: string
   moodLabel?: string
   reflectionText?: string
+  workAnswers?: { label: string; value: string }[]
 }) {
   try {
     const userId = await getCurrentUserId()
@@ -72,12 +73,14 @@ export async function saveTrainingSession(data: {
       userId,
       trainingId: data.odaiNumber,
       trainingTitle: data.trainingTitle,
+      categoryName: data.categoryName,
       score: validScore,
       maxScore: data.maxScore,
       userName: profile?.name ?? undefined,
       moodEmoji: data.moodEmoji,
       moodLabel: data.moodLabel,
       reflectionText: data.reflectionText,
+      workAnswers: data.workAnswers,
     }).catch((e) => console.error("[notify-chatwork] error:", e))
 
     return { success: true }
