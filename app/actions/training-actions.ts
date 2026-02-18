@@ -60,46 +60,25 @@ export async function saveTrainingSession(data: {
       console.error("[v0] Server: Error saving user progress:", progressError.message)
     }
 
-    // Chatwork 通知（mood / reflection が両方ある場合のみ送信）
-    if (data.moodEmoji && data.moodLabel && data.reflectionText) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", userId)
-        .single()
+    // Chatwork 通知（Server Action から直接 Chatwork API を呼ぶ）
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", userId)
+      .single()
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (supabaseUrl && supabaseAnonKey && session?.access_token) {
-        fetch(`${supabaseUrl}/functions/v1/notify-chatwork`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session.access_token}`,
-            "apikey": supabaseAnonKey,
-          },
-          body: JSON.stringify({
-            userName: profile?.name ?? "不明",
-            trainingTitle: data.trainingTitle,
-            moodEmoji: data.moodEmoji,
-            moodLabel: data.moodLabel,
-            reflectionText: data.reflectionText,
-          }),
-        }).catch((e) => console.error("[notify-chatwork] fetch error:", e))
-      }
-    } else {
-      // mood/reflection 未入力時は従来モック通知
-      await notifyChatworkTaskCompleted({
-        kind: "training",
-        userId,
-        trainingId: data.odaiNumber,
-        trainingTitle: data.trainingTitle,
-        score: validScore,
-        maxScore: data.maxScore,
-      }).catch(() => {})
-    }
+    await notifyChatworkTaskCompleted({
+      kind: "training",
+      userId,
+      trainingId: data.odaiNumber,
+      trainingTitle: data.trainingTitle,
+      score: validScore,
+      maxScore: data.maxScore,
+      userName: profile?.name ?? undefined,
+      moodEmoji: data.moodEmoji,
+      moodLabel: data.moodLabel,
+      reflectionText: data.reflectionText,
+    }).catch((e) => console.error("[notify-chatwork] error:", e))
 
     return { success: true }
   } catch (error) {
