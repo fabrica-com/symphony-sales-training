@@ -127,6 +127,10 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
         20 // action
 
       const selectedMoodOption = selectedMood !== null ? sessionContent.moodOptions[selectedMood] : null
+      const workAnswers = sessionContent.work?.fields
+        .map((field, i) => ({ label: field.label, value: workFields[i] ?? "" }))
+        .filter((a) => a.value.trim().length > 0)
+
       addTrainingLog({
         odaiNumber: training.id,
         trainingTitle: training.title,
@@ -139,6 +143,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
         moodEmoji: selectedMoodOption?.emoji,
         moodLabel: selectedMoodOption?.label,
         reflectionText: reflectionText || undefined,
+        workAnswers: workAnswers && workAnswers.length > 0 ? workAnswers : undefined,
       })
       setHasLoggedCompletion(true)
     }
