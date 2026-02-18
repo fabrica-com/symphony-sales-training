@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { levelColors } from "@/lib/training-data"
-import { TrainingResultsClient } from "@/components/training-results-client"
 import { getSessionContentFromDB } from "@/lib/session-data"
 import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
 import { TrainingResults } from "@/components/training-results"
+import { getTrainingResultsFromDb, type TrainingResult } from "@/lib/training-results"
 import { HighlightText, HighlightListItem } from "@/components/training-content-highlighter"
 
 interface TrainingPageProps {
@@ -36,7 +36,12 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
   const deepDiveContent = await getDeepDiveContentFromDb(training.id)
   const hasDeepDive = deepDiveContent !== null && deepDiveContent !== undefined
 
-  const trainingResults = [] // Declare trainingResults variable
+  const rawResults = await getTrainingResultsFromDb(training.id)
+  const trainingResults: TrainingResult[] = rawResults.map((r) => ({
+    ...r,
+    duration: Math.round((r.duration ?? 0) / 60),
+    date: r.completedAt ? new Date(r.completedAt).toLocaleDateString("ja-JP") : undefined,
+  }))
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -234,7 +239,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                   </CardContent>
                 </Card>
 
-                <TrainingResultsClient trainingId={training.id} />
+                <TrainingResults results={trainingResults} />
 
                 <Card>
                   <CardHeader>

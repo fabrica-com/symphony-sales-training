@@ -31,3 +31,5 @@ next-env.d.ts
 
 # OAuth credentials
 client_secret.json
+# Supabase Edge Functions secrets
+supabase/functions/.env

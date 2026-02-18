@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { type TrainingResult, getScoreColor, getScoreBgColor } from "@/lib/training-results"
+import { type TrainingResult, getScoreColor, getScoreBgColor } from "@/lib/training-results-types"
 
 interface TrainingResultsProps {
   results: TrainingResult[]
@@ -42,7 +42,7 @@ export function TrainingResults({ results }: TrainingResultsProps) {
 
   const latestResult = results[results.length - 1]
   const previousResult = results.length > 1 ? results[results.length - 2] : null
-  const improvement = previousResult ? latestResult.overallScore - previousResult.overallScore : 0
+  const improvement = previousResult ? latestResult.score - previousResult.score : 0
 
   return (
     <Card>
@@ -57,12 +57,12 @@ export function TrainingResults({ results }: TrainingResultsProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 最新スコアサマリー */}
-        <div className={`rounded-lg border p-4 ${getScoreBgColor(latestResult.overallScore)}`}>
+        <div className={`rounded-lg border p-4 ${getScoreBgColor(latestResult.score)}`}>
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">最新スコア</span>
             <div className="flex items-center gap-2">
-              <span className={`text-2xl font-bold ${getScoreColor(latestResult.overallScore)}`}>
-                {latestResult.overallScore}
+              <span className={`text-2xl font-bold ${getScoreColor(latestResult.score)}`}>
+                {latestResult.score}
               </span>
               <span className="text-muted-foreground text-sm">/ 100</span>
             </div>
@@ -104,7 +104,7 @@ export function TrainingResults({ results }: TrainingResultsProps) {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`font-bold ${getScoreColor(result.overallScore)}`}>{result.overallScore}点</span>
+                  <span className={`font-bold ${getScoreColor(result.score)}`}>{result.score}点</span>
                   {expandedResult === result.id ? (
                     <ChevronUp className="h-4 w-4" />
                   ) : (
