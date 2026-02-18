@@ -113,6 +113,20 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
   // Log training completion when reaching ending phase
   useEffect(() => {
     if (currentPhase === "ending" && !hasLoggedCompletion && user) {
+      const simMax = (sessionContent.simulation ?? []).reduce(
+        (sum, scene) =>
+          sum + Math.max(0, ...scene.options.map((o) => o.points ?? 0)),
+        0,
+      )
+      const computedMaxScore =
+        10 + // mood
+        10 + // reviewQuiz
+        (sessionContent.quickCheck?.length ?? 0) * 15 + // quickCheck
+        simMax + // simulation
+        10 + // reflection
+        20 // action
+
+      const selectedMoodOption = selectedMood !== null ? sessionContent.moodOptions[selectedMood] : null
       addTrainingLog({
         odaiNumber: training.id,
         trainingTitle: training.title,
@@ -120,8 +134,11 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
         categoryName: category.name,
         completedAt: new Date().toISOString(),
         score: points,
-        maxScore: 200, // Maximum possible points
+        maxScore: computedMaxScore,
         duration: elapsedTime,
+        moodEmoji: selectedMoodOption?.emoji,
+        moodLabel: selectedMoodOption?.label,
+        reflectionText: reflectionText || undefined,
       })
       setHasLoggedCompletion(true)
     }

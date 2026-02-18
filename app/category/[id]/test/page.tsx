@@ -79,7 +79,7 @@ export default function CategoryTestPage() {
     setTestResult(result)
     setPhase("result")
 
-    // Save test result if user is logged in
+    // Save test result if user is logged in（DB保存はサーバー再採点）
     if (user && addTestResult) {
       addTestResult({
         categoryId: test.categoryId,
@@ -91,7 +91,7 @@ export default function CategoryTestPage() {
         correctCount: result.correctCount,
         totalQuestions: test.totalQuestions,
         duration: (test.timeLimit * 60) - timeRemaining,
-      })
+      }, answers)
     }
   }, [test, answers, user, addTestResult, timeRemaining])
 

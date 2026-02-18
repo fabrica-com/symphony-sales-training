@@ -86,6 +86,24 @@ export async function getCategoryByIdFromDb(id: string): Promise<Category | null
     console.error("Error fetching trainings:", trainingsError)
   }
 
+  const trainingIds = (trainings ?? []).map((t) => t.id)
+  let hasDeepDive = false
+  if (trainingIds.length > 0) {
+    const { count } = await supabase
+      .from("deep_dive_contents")
+      .select("*", { count: "exact", head: true })
+      .in("training_id", trainingIds)
+    hasDeepDive = (count ?? 0) > 0
+  }
+  // カテゴリ単位の深掘り（category_deep_dive_contents）があれば true
+  if (!hasDeepDive) {
+    const { count: categoryCount } = await supabase
+      .from("category_deep_dive_contents")
+      .select("*", { count: "exact", head: true })
+      .eq("category_id", id)
+    hasDeepDive = (categoryCount ?? 0) > 0
+  }
+
   return {
     id: category.id,
     name: category.name,
@@ -93,6 +111,7 @@ export async function getCategoryByIdFromDb(id: string): Promise<Category | null
     totalDuration: category.total_duration,
     targetLevel: category.target_level,
     color: category.color,
+    hasDeepDive,
     trainings: trainings?.map((t) => ({
       id: t.id,
       title: t.title,
@@ -324,6 +343,33 @@ export async function getAllTestCategoryIds(): Promise<{ id: string }[]> {
   }
 
   return data.map((d) => ({ id: d.category_id }))
+}
+
+// カテゴリ単位の深掘りコンテンツ（C の「中古車流通の構造と現状」など）
+export interface CategoryDeepDiveContent {
+  categoryId: string
+  title: string
+  subtitle: string | null
+  bodyHtml: string
+}
+
+export async function getCategoryDeepDiveFromDb(categoryId: string): Promise<CategoryDeepDiveContent | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("category_deep_dive_contents")
+    .select("category_id, title, subtitle, body_html")
+    .eq("category_id", categoryId)
+    .single()
+
+  if (error || !data) return null
+
+  return {
+    categoryId: data.category_id,
+    title: data.title,
+    subtitle: data.subtitle,
+    bodyHtml: data.body_html,
+  }
 }
 
 // 修了テスト型定義

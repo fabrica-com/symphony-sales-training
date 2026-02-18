@@ -1,12 +1,23 @@
 "use server"
 
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
+import { getCurrentUserId } from "@/lib/auth-server"
 
-export async function loadUserDataFromServer(userId: string) {
+/** 現在ログインしているユーザーの進捗データのみを取得（サーバーで認証ユーザーを確定） */
+export async function loadUserDataFromServer() {
   try {
-    const supabase = await createAdminClient()
+    const userId = await getCurrentUserId()
+    if (!userId) {
+      return {
+        success: true,
+        sessions: [],
+        progress: [],
+        tests: [],
+      }
+    }
 
-    // Fetch training sessions
+    const supabase = await createClient()
+
     const { data: sessions, error: sessionsError } = await supabase
       .from("training_sessions")
       .select("*")
@@ -18,7 +29,6 @@ export async function loadUserDataFromServer(userId: string) {
       return { success: false, error: sessionsError.message }
     }
 
-    // Fetch user progress
     const { data: progress, error: progressError } = await supabase
       .from("user_training_progress")
       .select("*")
@@ -28,7 +38,6 @@ export async function loadUserDataFromServer(userId: string) {
       console.error("[v0] Error fetching user progress:", progressError.message)
     }
 
-    // Fetch test results
     const { data: tests, error: testsError } = await supabase
       .from("category_test_results")
       .select("*")
@@ -39,13 +48,11 @@ export async function loadUserDataFromServer(userId: string) {
       console.error("[v0] Error fetching test results:", testsError.message)
     }
 
-    console.log("[v0] Server: Fetched data - sessions:", sessions?.length || 0, "progress:", progress?.length || 0, "tests:", tests?.length || 0)
-
     return {
       success: true,
-      sessions: sessions || [],
-      progress: progress || [],
-      tests: tests || [],
+      sessions: sessions ?? [],
+      progress: progress ?? [],
+      tests: tests ?? [],
     }
   } catch (error) {
     console.error("[v0] Server: Exception loading user data:", error)
