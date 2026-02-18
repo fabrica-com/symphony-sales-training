@@ -48,7 +48,7 @@ export async function getTrainingResultsFromDb(trainingId: number): Promise<Trai
       feedback: session.feedback || "",
       strengths: session.strengths || [],
       improvements: session.improvements || [],
-      evaluation: session.evaluation || {},
+      evaluation: Array.isArray(session.evaluation) ? session.evaluation : [],
       completedAt: session.completed_at,
     }))
 
