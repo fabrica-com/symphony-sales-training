@@ -27,6 +27,9 @@ export interface TrainingLog {
   maxScore: number
   duration: number
   attemptNumber: number
+  moodEmoji?: string
+  moodLabel?: string
+  reflectionText?: string
 }
 
 export interface UserProgress {
@@ -60,7 +63,7 @@ interface AuthContextType {
   userProgress: Record<number, UserProgress>
   addTrainingLog: (log: Omit<TrainingLog, "id" | "attemptNumber">) => Promise<void>
   testResults: TestResult[]
-  addTestResult: (result: Omit<TestResult, "id" | "attemptNumber">) => Promise<void>
+  addTestResult: (result: Omit<TestResult, "id" | "attemptNumber">, answers: number[]) => Promise<void>
   getTestResultsByCategory: (categoryId: string) => TestResult[]
   getBestTestResult: (categoryId: string) => TestResult | undefined
   getTotalPoints: () => number
@@ -79,9 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // --- Data Loading Logic ---
 
-  const loadUserDataFromDB = useCallback(async (userId: string) => {
+  const loadUserDataFromDB = useCallback(async () => {
     try {
-      const result = await loadUserDataFromServer(userId)
+      const result = await loadUserDataFromServer()
       if (!result.success) return
 
       // Training Logs
@@ -185,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(userData)
-      await loadUserDataFromDB(session.user.id)
+      await loadUserDataFromDB()
     } catch (e) {
       console.error("[Auth] Session Handler Error:", e)
     }
@@ -299,29 +302,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }))
 
     await saveTrainingSession({
-      userId: user.id,
       odaiNumber: log.odaiNumber,
       trainingTitle: log.trainingTitle,
       categoryId: log.categoryId,
       categoryName: log.categoryName,
       score: log.score,
-      maxScore: log.maxScore, // 明示的に渡す
+      maxScore: log.maxScore,
       duration: log.duration,
       attemptNumber,
+      moodEmoji: log.moodEmoji,
+      moodLabel: log.moodLabel,
+      reflectionText: log.reflectionText,
     })
   }
 
-  const addTestResult = async (result: Omit<TestResult, "id" | "attemptNumber">) => {
+  const addTestResult = async (result: Omit<TestResult, "id" | "attemptNumber">, answers: number[]) => {
     if (!user) return
     const attemptNumber = testResults.filter(t => t.categoryId === result.categoryId).length + 1
-    
+
+    // in-memory state は client 採点値で即時更新（表示用）
     const newResult: TestResult = { ...result, id: crypto.randomUUID(), attemptNumber }
     setTestResults(prev => [newResult, ...prev])
 
+    // DB 保存はサーバー側で正解を取得して再採点
     await saveTestResult({
-      userId: user.id,
-      ...result,
+      categoryId: result.categoryId,
+      duration: result.duration,
       attemptNumber,
+      answers,
     })
   }
 

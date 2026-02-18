@@ -80,8 +80,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               ))}
             </div>
 
-            {/* Deep Dive Button for Category C */}
-            {category.id === "C" && (
+            {/* Deep Dive: このカテゴリに deep_dive_contents がある場合のみ表示 */}
+            {category.hasDeepDive && (
               <div className="mt-10 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 p-6 shadow-lg">
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                   <div className="flex items-center gap-4">
@@ -90,11 +90,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-amber-900">この章をより深く理解したい方へ</h3>
-                      <p className="text-sm text-amber-700">中古車流通の構造と現状を専門的に解説する読み物</p>
+                      <p className="text-sm text-amber-700">専門的に解説する読み物でさらに学べます</p>
                     </div>
                   </div>
                   <Button asChild size="lg" className="w-full bg-amber-500 text-white hover:bg-amber-600 sm:w-auto">
-                    <Link href="/category/C/deep-dive">
+                    <Link href={`/category/${category.id}/deep-dive`}>
                       <BookOpen className="mr-2 h-5 w-5" />
                       この章をより深掘りする
                     </Link>

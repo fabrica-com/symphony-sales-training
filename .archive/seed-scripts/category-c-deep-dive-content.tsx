@@ -1,23 +1,24 @@
 import Link from "next/link"
 import { ArrowLeft, BookOpen, TrendingUp, Building2, Truck, ShoppingCart, Lightbulb, BarChart3 } from "lucide-react"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
 
-export default function DeepDivePage() {
+interface Props {
+  category: { id: string; name: string }
+}
+
+/** DB 用 HTML 出力・表示用。Header/Footer なしの本文のみ */
+export function CategoryCDeepDiveBody({ category }: Props) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="flex-1">
+    <>
         {/* Hero Section */}
         <section className="border-b border-border bg-gradient-to-b from-amber-50 to-background py-12">
           <div className="mx-auto max-w-4xl px-4">
             <Link
-              href="/category/C"
+              href={`/category/${category.id}`}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              業界知識：中古車ビジネスに戻る
+              {category.name}に戻る
             </Link>
 
             <div className="flex items-start gap-4">
@@ -929,17 +930,15 @@ export default function DeepDivePage() {
             {/* Back to category */}
             <div className="flex justify-center">
               <Link
-                href="/category/C"
+                href={`/category/${category.id}`}
                 className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-3 font-medium text-white hover:bg-amber-600 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                業界知識：中古車ビジネスに戻る
+                {category.name}に戻る
               </Link>
             </div>
           </div>
         </article>
-      </main>
-      <Footer />
-    </div>
+    </>
   )
 }

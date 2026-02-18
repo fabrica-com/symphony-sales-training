@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "start": "next start",
     "db:check": "bun run scripts/check-db.ts",
-    "db:sync": "bun run scripts/sync-remote-to-local.ts"
+    "db:sync": "bun run scripts/sync-remote-to-local.ts",
+    "db:seed-category-deep-dive": "bun run scripts/seed-category-deep-dive-c.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

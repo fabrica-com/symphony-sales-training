@@ -26,6 +26,11 @@ export async function getAllCategoriesWithTrainingsAction() {
     .select("id, category_id, title, subtitle, duration, level, detail, display_order")
     .order("display_order")
 
+  const { data: tests } = await supabase
+    .from("category_tests")
+    .select("category_id")
+  const categoryIdsWithTest = new Set((tests ?? []).map((t) => t.category_id))
+
   return categories.map((cat) => ({
     id: cat.id,
     name: cat.name,
@@ -33,6 +38,7 @@ export async function getAllCategoriesWithTrainingsAction() {
     totalDuration: cat.total_duration,
     targetLevel: cat.target_level,
     color: cat.color,
+    hasTest: categoryIdsWithTest.has(cat.id),
     trainings: (trainings ?? [])
       .filter((t) => t.category_id === cat.id)
       .map((t) => ({

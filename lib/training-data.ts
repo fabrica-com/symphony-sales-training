@@ -34,6 +34,10 @@ export interface Category {
   targetLevel: string
   trainings: Training[]
   color: string
+  /** 総合テストが存在する場合 true（DB の category_tests で判定） */
+  hasTest?: boolean
+  /** このカテゴリに Deep Dive コンテンツがある場合 true（DB の deep_dive_contents で判定） */
+  hasDeepDive?: boolean
 }
 
 export const levelColors: Record<Level, string> = {

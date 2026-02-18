@@ -1,65 +1,106 @@
 "use server"
 
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
+import { getCurrentUserId } from "@/lib/auth-server"
+import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
 
 export async function saveTrainingSession(data: {
-  userId: string
   odaiNumber: number
   trainingTitle: string
   categoryId: string
   categoryName: string
   score: number
-  maxScore: number // Accept maxScore from caller
+  maxScore: number
   duration: number
   attemptNumber: number
+  moodEmoji?: string
+  moodLabel?: string
+  reflectionText?: string
 }) {
   try {
-    const supabase = await createAdminClient()
-    
-    // Validate score: if undefined or NaN, use 0
+    const userId = await getCurrentUserId()
+    if (!userId) {
+      return { success: false, error: "Unauthorized" }
+    }
+
+    const supabase = await createClient()
+
     const scoreValue = data.score ?? 0
     const isValidScore = !isNaN(scoreValue) && isFinite(scoreValue)
     const finalScore = isValidScore ? scoreValue : 0
-    
-    // Ensure overall_score is within valid range (0 to maxScore)
     const validScore = Math.min(data.maxScore, Math.max(0, Math.round(finalScore)))
-    
-    console.log("[v0] saveTrainingSession - userId:", data.userId)
-    console.log("[v0] saveTrainingSession - score:", data.score, "validated:", validScore)
-    console.log("[v0] saveTrainingSession - maxScore:", data.maxScore)
-    
+
     const { error: sessionError } = await supabase.from("training_sessions").insert({
-      user_id: data.userId,
+      user_id: userId,
       training_id: data.odaiNumber,
       category_id: data.categoryId,
       training_title: data.trainingTitle,
       attempt_number: data.attemptNumber,
       duration_seconds: data.duration,
       overall_score: validScore,
-      max_score: data.maxScore, // Use actual maxScore (should be 200)
+      max_score: data.maxScore,
       completed_at: new Date().toISOString(),
       category_name: data.categoryName,
     })
-    
+
     if (sessionError) {
       console.error("[v0] Server: Error saving training session:", sessionError.message)
       return { success: false, error: sessionError.message }
     }
-    
-    // Update progress
+
     const { error: progressError } = await supabase.from("user_training_progress").upsert({
-      user_id: data.userId,
+      user_id: userId,
       training_id: data.odaiNumber,
       category_id: data.categoryId,
       status: "completed",
       completed_at: new Date().toISOString(),
     }, { onConflict: "user_id,training_id" })
-    
+
     if (progressError) {
       console.error("[v0] Server: Error saving user progress:", progressError.message)
     }
-    
-    console.log("[v0] Server: Training session saved successfully")
+
+    // Chatwork 通知（mood / reflection が両方ある場合のみ送信）
+    if (data.moodEmoji && data.moodLabel && data.reflectionText) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", userId)
+        .single()
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (supabaseUrl && supabaseAnonKey && session?.access_token) {
+        fetch(`${supabaseUrl}/functions/v1/notify-chatwork`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey": supabaseAnonKey,
+          },
+          body: JSON.stringify({
+            userName: profile?.name ?? "不明",
+            trainingTitle: data.trainingTitle,
+            moodEmoji: data.moodEmoji,
+            moodLabel: data.moodLabel,
+            reflectionText: data.reflectionText,
+          }),
+        }).catch((e) => console.error("[notify-chatwork] fetch error:", e))
+      }
+    } else {
+      // mood/reflection 未入力時は従来モック通知
+      await notifyChatworkTaskCompleted({
+        kind: "training",
+        userId,
+        trainingId: data.odaiNumber,
+        trainingTitle: data.trainingTitle,
+        score: validScore,
+        maxScore: data.maxScore,
+      }).catch(() => {})
+    }
+
     return { success: true }
   } catch (error) {
     console.error("[v0] Server: Exception saving training session:", error)
@@ -68,40 +109,79 @@ export async function saveTrainingSession(data: {
 }
 
 export async function saveTestResult(data: {
-  userId: string
   categoryId: string
-  categoryName: string
-  score: number
-  percentage: number
-  passed: boolean
-  correctCount: number
-  totalQuestions: number
   duration: number
   attemptNumber: number
+  answers: number[]
 }) {
   try {
-    const supabase = await createAdminClient()
-    
+    const userId = await getCurrentUserId()
+    if (!userId) {
+      return { success: false, error: "Unauthorized" }
+    }
+
+    const supabase = await createClient()
+
+    // カテゴリテスト設定（passing_score, total_questions）をサーバーで取得
+    const { data: testConfig, error: configError } = await supabase
+      .from("category_tests")
+      .select("id, category_name, passing_score, total_questions")
+      .eq("category_id", data.categoryId)
+      .single()
+
+    if (configError || !testConfig) {
+      console.error("[v0] Server: Error fetching test config:", configError?.message)
+      return { success: false, error: "Test config not found" }
+    }
+
+    // 正解をサーバーで取得してサーバー側で採点
+    const { data: questions, error: questionsError } = await supabase
+      .from("category_test_questions")
+      .select("question_number, correct_answer")
+      .eq("category_test_id", testConfig.id)
+      .order("question_number")
+
+    if (questionsError || !questions) {
+      console.error("[v0] Server: Error fetching questions:", questionsError?.message)
+      return { success: false, error: "Questions not found" }
+    }
+
+    let correctCount = 0
+    for (let i = 0; i < questions.length; i++) {
+      if (data.answers[i] === questions[i].correct_answer) correctCount++
+    }
+    const percentage = Math.round((correctCount / testConfig.total_questions) * 100)
+    const passed = percentage >= testConfig.passing_score
+    const score = correctCount * 2
+
     const { error } = await supabase.from("category_test_results").insert({
-      user_id: data.userId,
+      user_id: userId,
       category_id: data.categoryId,
-      category_name: data.categoryName,
-      score: data.score,
-      percentage: data.percentage,
-      passed: data.passed,
-      correct_count: data.correctCount,
-      total_questions: data.totalQuestions,
+      category_name: testConfig.category_name,
+      score,
+      percentage,
+      passed,
+      correct_count: correctCount,
+      total_questions: testConfig.total_questions,
       duration: data.duration,
       attempt_number: data.attemptNumber,
     })
-    
+
     if (error) {
       console.error("[v0] Server: Error saving test result:", error.message)
       return { success: false, error: error.message }
     }
-    
-    console.log("[v0] Server: Test result saved successfully")
-    return { success: true }
+
+    await notifyChatworkTaskCompleted({
+      kind: "category_test",
+      userId,
+      categoryId: data.categoryId,
+      categoryName: testConfig.category_name,
+      percentage,
+      passed,
+    }).catch(() => {})
+
+    return { success: true, score, percentage, passed, correctCount }
   } catch (error) {
     console.error("[v0] Server: Exception saving test result:", error)
     return { success: false, error: String(error) }

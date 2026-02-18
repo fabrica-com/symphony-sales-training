@@ -94,17 +94,11 @@ export default function FinalExamPage() {
     setTestResult(result)
     setPhase("result")
 
-    // Save test result if user is logged in
+    // Save test result if user is logged in（DB保存はサーバー再採点）
     if (user) {
       try {
         await saveFinalExamResultAction({
-          userId: user.id,
-          completedAt: new Date().toISOString(),
-          score: result.score,
-          percentage: result.percentage,
-          passed: result.passed,
-          correctCount: result.correctCount,
-          totalQuestions: exam.totalQuestions,
+          answers,
           duration: (exam.timeLimit * 60) - timeRemaining,
         })
       } catch (error) {

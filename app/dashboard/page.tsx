@@ -281,7 +281,7 @@ function DashboardPage() {
                 <div className="space-y-4">
                   {categories.map((category) => {
                     const bestResult = getBestTestResult(category.id)
-                    const hasTest = category.id === "A" // Currently only category A has a test
+                    const hasTest = category.hasTest === true
 
                     if (!hasTest) {
                       return (
