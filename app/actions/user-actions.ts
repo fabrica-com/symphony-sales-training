@@ -1,13 +1,15 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { getCurrentUserId } from "@/lib/auth-server"
+import { log } from "@/lib/logger"
 
 /** 現在ログインしているユーザーの進捗データのみを取得（サーバーで認証ユーザーを確定） */
 export async function loadUserDataFromServer() {
   try {
     const userId = await getCurrentUserId()
     if (!userId) {
+      log.info("LOAD_USER_DATA_NO_SESSION", { reason: "no_authenticated_user" })
       return {
         success: true,
         sessions: [],
@@ -16,7 +18,9 @@ export async function loadUserDataFromServer() {
       }
     }
 
-    const supabase = await createClient()
+    log.info("LOAD_USER_DATA_START", { userId })
+
+    const supabase = await createAdminClient()
 
     const { data: sessions, error: sessionsError } = await supabase
       .from("training_sessions")
@@ -25,7 +29,12 @@ export async function loadUserDataFromServer() {
       .order("created_at", { ascending: false })
 
     if (sessionsError) {
-      console.error("[v0] Error fetching training sessions:", sessionsError.message)
+      log.error("LOAD_USER_DATA_SESSIONS_ERROR", {
+        userId,
+        table: "training_sessions",
+        message: sessionsError.message,
+        code: sessionsError.code,
+      })
       return { success: false, error: sessionsError.message }
     }
 
@@ -35,7 +44,12 @@ export async function loadUserDataFromServer() {
       .eq("user_id", userId)
 
     if (progressError) {
-      console.error("[v0] Error fetching user progress:", progressError.message)
+      log.error("LOAD_USER_DATA_PROGRESS_ERROR", {
+        userId,
+        table: "user_training_progress",
+        message: progressError.message,
+        code: progressError.code,
+      })
     }
 
     const { data: tests, error: testsError } = await supabase
@@ -45,8 +59,20 @@ export async function loadUserDataFromServer() {
       .order("created_at", { ascending: false })
 
     if (testsError) {
-      console.error("[v0] Error fetching test results:", testsError.message)
+      log.error("LOAD_USER_DATA_TESTS_ERROR", {
+        userId,
+        table: "category_test_results",
+        message: testsError.message,
+        code: testsError.code,
+      })
     }
+
+    log.info("LOAD_USER_DATA_SUCCESS", {
+      userId,
+      sessionCount: sessions?.length ?? 0,
+      progressCount: progress?.length ?? 0,
+      testCount: tests?.length ?? 0,
+    })
 
     return {
       success: true,
@@ -55,7 +81,7 @@ export async function loadUserDataFromServer() {
       tests: tests ?? [],
     }
   } catch (error) {
-    console.error("[v0] Server: Exception loading user data:", error)
+    log.error("LOAD_USER_DATA_EXCEPTION", { message: String(error) })
     return { success: false, error: String(error) }
   }
 }

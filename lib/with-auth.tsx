@@ -20,7 +20,6 @@ export function withAuth<P extends object>(
     useEffect(() => {
       // Only redirect if we've finished loading and there's no user
       if (!isLoading && !user) {
-        console.log('[v0] withAuth: No user, redirecting to /login')
         router.push('/login')
       }
     }, [user, isLoading, router])

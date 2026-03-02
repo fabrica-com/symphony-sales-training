@@ -214,7 +214,7 @@ export default function FinalExamPage() {
             </Link>
 
             <Card>
-              <CardHeader className="text-center border-b bg-gradient-to-r from-primary/10 to-primary/5">
+              <CardHeader className="text-center border-b bg-linear-to-r from-primary/10 to-primary/5">
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary text-primary-foreground mb-4">
                   <GraduationCap className="h-10 w-10" />
                 </div>
@@ -243,7 +243,7 @@ export default function FinalExamPage() {
 
                 <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
                     <div>
                       <p className="font-medium text-amber-900">注意事項</p>
                       <ul className="mt-2 text-sm text-amber-800 space-y-1">
@@ -259,7 +259,7 @@ export default function FinalExamPage() {
 
                 <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
                   <div className="flex items-start gap-3">
-                    <GraduationCap className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <GraduationCap className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
                     <div>
                       <p className="font-medium text-blue-900">出題範囲</p>
                       <ul className="mt-2 text-sm text-blue-800 space-y-1">
@@ -278,7 +278,7 @@ export default function FinalExamPage() {
                 {!user && (
                   <div className="rounded-lg bg-orange-50 border border-orange-200 p-4">
                     <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 shrink-0" />
                       <div>
                         <p className="font-medium text-orange-900">ログインのおすすめ</p>
                         <p className="mt-1 text-sm text-orange-800">
@@ -429,7 +429,7 @@ export default function FinalExamPage() {
         {phase === "result" && testResult && (
           <div className="mx-auto max-w-3xl px-4 py-12">
             <Card>
-              <CardHeader className={`text-center border-b ${testResult.passed ? "bg-gradient-to-r from-green-50 to-emerald-50" : "bg-gradient-to-r from-red-50 to-orange-50"}`}>
+              <CardHeader className={`text-center border-b ${testResult.passed ? "bg-linear-to-r from-green-50 to-emerald-50" : "bg-linear-to-r from-red-50 to-orange-50"}`}>
                 <div className={`mx-auto flex h-24 w-24 items-center justify-center rounded-full ${
                   testResult.passed ? "bg-green-100" : "bg-red-100"
                 } mb-4`}>
@@ -490,9 +490,9 @@ export default function FinalExamPage() {
                         >
                           <div className="flex items-start gap-2 mb-2">
                             {isCorrect ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
                             ) : (
-                              <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                              <XCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm">問{index + 1}. {question.question}</p>

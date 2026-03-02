@@ -33,3 +33,8 @@ next-env.d.ts
 client_secret.json
 # Supabase Edge Functions secrets
 supabase/functions/.env
+
+# Security logs (dev only)
+.logs/
+# next-agents-md
+.next-docs/

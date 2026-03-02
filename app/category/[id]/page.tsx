@@ -28,7 +28,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
-        <section className="border-b border-border bg-gradient-to-b from-secondary/50 to-background py-12">
+        <section className="border-b border-border bg-linear-to-b from-secondary/50 to-background py-12">
           <div className="mx-auto max-w-4xl px-4">
             <Link
               href="/"
@@ -82,7 +82,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
             {/* Deep Dive: このカテゴリに deep_dive_contents がある場合のみ表示 */}
             {category.hasDeepDive && (
-              <div className="mt-10 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 p-6 shadow-lg">
+              <div className="mt-10 rounded-xl border-2 border-amber-400 bg-linear-to-r from-amber-50 to-orange-50 p-6 shadow-lg">
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-white">

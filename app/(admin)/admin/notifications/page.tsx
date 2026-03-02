@@ -173,7 +173,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100">
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">

@@ -1,11 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   BookOpen,
-  LogOut,
   Trophy,
   Target,
   Clock,
@@ -14,7 +12,6 @@ import {
   ChevronRight,
   Award,
   BarChart3,
-  User,
   History,
   FileCheck,
   CheckCircle2,
@@ -28,13 +25,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
 import type { Category } from "@/lib/training-data"
 import { getAllCategoriesWithTrainingsAction } from "@/app/actions/category-actions"
+import { tailwindToHex } from "@/lib/colors"
 
 function DashboardPage() {
-  const router = useRouter()
   const {
     user,
     isLoading,
-    logout,
     trainingLogs,
     userProgress,
     testResults,
@@ -72,18 +68,16 @@ function DashboardPage() {
     return null; 
   }
 
-  const handleLogout = () => {
-    logout()
-    router.push("/login")
-  }
-
   // Get recent logs (last 10)
   const recentLogs = trainingLogs.slice(0, 10)
 
   // Calculate stats
   const totalPoints = getTotalPoints()
   const completedCount = getCompletedTrainings()
-  const progressPercentage = getProgressPercentage()
+  const totalTrainingCount = categories.reduce((sum, c) => sum + c.trainings.length, 0)
+  const progressPercentage = totalTrainingCount > 0
+    ? Math.round((completedCount / totalTrainingCount) * 100)
+    : 0
 
   // Calculate total time spent (in hours)
   const totalTimeHours = trainingLogs.reduce((sum, log) => sum + log.duration, 0) / 3600
@@ -126,7 +120,7 @@ function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100">
       <main className="mx-auto max-w-7xl px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
@@ -153,7 +147,7 @@ function DashboardPage() {
               <Target className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{completedCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ 100</span></div>
+              <div className="text-2xl font-bold">{completedCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {totalTrainingCount || "..."}</span></div>
               <Progress value={progressPercentage} className="mt-2" />
             </CardContent>
           </Card>
@@ -220,7 +214,7 @@ function DashboardPage() {
                           >
                             <div
                               className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
-                              style={{ backgroundColor: category.color + "20", color: category.color }}
+                              style={{ backgroundColor: tailwindToHex(category.color) + "20", color: tailwindToHex(category.color) }}
                             >
                               {category.id}
                             </div>
@@ -256,12 +250,14 @@ function DashboardPage() {
                       研修一覧を見る
                     </Link>
                   </Button>
-                  <Button asChild variant="outline" className="flex-1 bg-transparent">
-                    <Link href="/category/A">
-                      <Target className="h-4 w-4 mr-2" />
-                      基礎マインドセット編から始める
-                    </Link>
-                  </Button>
+                  {categories.length > 0 && (
+                    <Button asChild variant="outline" className="flex-1 bg-transparent">
+                      <Link href={`/category/${categories[0].id}`}>
+                        <Target className="h-4 w-4 mr-2" />
+                        {categories[0].name}から始める
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -292,7 +288,7 @@ function DashboardPage() {
                           <div className="flex items-center gap-3">
                             <div
                               className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
-                              style={{ backgroundColor: category.color + "20", color: category.color }}
+                              style={{ backgroundColor: tailwindToHex(category.color) + "20", color: tailwindToHex(category.color) }}
                             >
                               {category.id}
                             </div>
@@ -316,7 +312,7 @@ function DashboardPage() {
                         <div className="flex items-center gap-3">
                           <div
                             className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
-                            style={{ backgroundColor: category.color + "20", color: category.color }}
+                            style={{ backgroundColor: tailwindToHex(category.color) + "20", color: tailwindToHex(category.color) }}
                           >
                             {category.id}
                           </div>
@@ -489,7 +485,7 @@ function DashboardPage() {
             </Card>
 
             {/* Training Stats per Course */}
-            {userProgress.size > 0 && (
+            {Object.keys(userProgress).length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -500,7 +496,8 @@ function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {Array.from(userProgress.entries()).map(([odaiNumber, progress]) => {
+                    {Object.entries(userProgress).map(([odaiNumberStr, progress]) => {
+                      const odaiNumber = Number(odaiNumberStr)
                       const category = categories.find((c) =>
                         c.trainings.some((t) => t.id === odaiNumber)
                       )
@@ -515,7 +512,7 @@ function DashboardPage() {
                           <div className="flex items-center gap-3">
                             <div
                               className="flex h-8 w-8 items-center justify-center rounded text-sm font-bold"
-                              style={category ? { backgroundColor: category.color + "20", color: category.color } : undefined}
+                              style={category ? { backgroundColor: tailwindToHex(category.color) + "20", color: tailwindToHex(category.color) } : undefined}
                             >
                               {odaiNumber}
                             </div>
