@@ -30,7 +30,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="border-b border-border bg-gradient-to-b from-blue-50 to-background py-12">
+        <section className="border-b border-border bg-linear-to-b from-blue-50 to-background py-12">
           <div className="mx-auto max-w-4xl px-4">
             <Link
               href={`/training/${training.id}`}
@@ -164,7 +164,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
                             <ul key={blockIndex} className="my-4 space-y-2">
                               {items.map((item, itemIndex) => (
                                 <li key={itemIndex} className="flex items-start gap-2">
-                                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
                                   <span className="text-muted-foreground">
                                     {item.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '').replace(/\*\*/g, '')}
                                   </span>

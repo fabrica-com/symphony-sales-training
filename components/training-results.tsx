@@ -14,8 +14,6 @@ interface TrainingResultsProps {
 
 export function TrainingResults({ results }: TrainingResultsProps) {
   // Debug logs
-  console.log("[v0] TrainingResults component - results count:", results.length)
-  console.log("[v0] TrainingResults component - results data:", results)
   
   const [expandedResult, setExpandedResult] = useState<string | null>(
     results.length > 0 ? results[results.length - 1].id : null,
@@ -64,7 +62,7 @@ export function TrainingResults({ results }: TrainingResultsProps) {
               <span className={`text-2xl font-bold ${getScoreColor(latestResult.score)}`}>
                 {latestResult.score}
               </span>
-              <span className="text-muted-foreground text-sm">/ 100</span>
+              <span className="text-muted-foreground text-sm">/ {latestResult.maxScore ?? "—"}</span>
             </div>
           </div>
           {improvement !== 0 && (

@@ -365,7 +365,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                     <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
                     <span className="flex-1">{option}</span>
                     {showReviewResult && index === sessionContent.reviewQuiz.correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 flex-shrink-0" />
+                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                     )}
                   </Button>
                 ))}
@@ -511,7 +511,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
               </div>
               {sessionContent.infographic.audioText && (
                 <div className="flex items-start gap-3 rounded-lg bg-secondary/30 p-4">
-                  <Volume2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <Volume2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <p className="text-sm">{sessionContent.infographic.audioText}</p>
                 </div>
               )}
@@ -557,7 +557,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                     <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
                     <span className="flex-1">{option}</span>
                     {showQuickCheckResult && index === sessionContent.quickCheck[quickCheckIndex].correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 flex-shrink-0" />
+                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                     )}
                   </Button>
                 ))}
@@ -820,7 +820,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                 {/* Senior Opening */}
                 {sessionContent.roleplay[roleplayIndex].seniorOpening && (
                   <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                       <span className="text-xs font-medium">先輩</span>
                     </div>
                     <div className="flex-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
@@ -837,7 +837,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                   return (
                     <div key={idx} className={cn("flex gap-3", isKenta && "flex-row-reverse")}>
                       <div className={cn(
-                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+                        "shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
                         isSenior 
                           ? "bg-blue-100 dark:bg-blue-900/30" 
                           : "bg-green-100 dark:bg-green-900/30"
@@ -875,7 +875,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                       <ul className="space-y-1">
                         {sessionContent.roleplay[roleplayIndex].keyPoints?.map((point, idx) => (
                           <li key={idx} className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
                             {point}
                           </li>
                         ))}
@@ -1116,9 +1116,9 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                     >
                       <span className="font-medium text-sm">{section.title}</span>
                       {expandedSections.includes(index) ? (
-                        <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                       )}
                     </button>
                     {expandedSections.includes(index) && (

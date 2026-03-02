@@ -69,7 +69,7 @@ interface AuthContextType {
   getBestTestResult: (categoryId: string) => TestResult | undefined
   getTotalPoints: () => number
   getCompletedTrainings: () => number
-  getProgressPercentage: () => number
+  getProgressPercentage: (total?: number) => number
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -271,7 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     })
     if (error) {
-      console.error("[v0] Google OAuth error:", error)
+      console.error("Google OAuth error:", error)
       throw error
     }
   }
@@ -343,7 +343,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
   const getTotalPoints = () => trainingLogs.reduce((s, l) => s + l.score, 0)
   const getCompletedTrainings = () => Object.keys(userProgress).length
-  const getProgressPercentage = () => Math.round((getCompletedTrainings() / 100) * 100)
+  /** @deprecated totalTrainingCount を渡してください。ハードコード 100 を避けるため dashboard 側で直接計算を推奨 */
+  const getProgressPercentage = (total = 0) =>
+    total > 0 ? Math.round((getCompletedTrainings() / total) * 100) : 0
 
   return (
     <AuthContext.Provider value={{

@@ -13,11 +13,9 @@ export async function getTrainingResultsFromDb(trainingId: number): Promise<Trai
     } = await client.auth.getUser()
 
     if (!user) {
-      console.log("[v0] getTrainingResultsFromDb - No user found")
       return []
     }
 
-    console.log("[v0] getTrainingResultsFromDb - fetching for trainingId:", trainingId, "userId:", user.id)
 
     // training_sessionsテーブルからデータを取得
     const { data, error } = await client
@@ -28,11 +26,10 @@ export async function getTrainingResultsFromDb(trainingId: number): Promise<Trai
       .order("attempt_number", { ascending: true })
 
     if (error) {
-      console.error("[v0] getTrainingResultsFromDb - error:", error)
+      console.error("getTrainingResultsFromDb - error:", error)
       return []
     }
 
-    console.log("[v0] getTrainingResultsFromDb - fetched count:", data?.length, "data:", data)
 
     // training_sessionsのフォーマットからTrainingResultに変換
     const results: TrainingResult[] = (data || []).map((session: any) => ({
@@ -54,7 +51,7 @@ export async function getTrainingResultsFromDb(trainingId: number): Promise<Trai
 
     return results
   } catch (error) {
-    console.error("[v0] getTrainingResultsFromDb - exception:", error)
+    console.error("getTrainingResultsFromDb - exception:", error)
     return []
   }
 }

@@ -37,7 +37,7 @@ export default function LoginPage() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="flex min-h-screen flex-col bg-linear-to-b from-slate-50 to-slate-100">
       {/* Main Content */}
       <main className="flex flex-1 flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -109,7 +109,7 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="border-t bg-white py-4">
         <div className="mx-auto max-w-7xl px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2024 ファブリカホールディングス. All rights reserved.</p>
+          <p>&copy; 2025 ファブリカホールディングス. All rights reserved.</p>
         </div>
       </footer>
     </div>

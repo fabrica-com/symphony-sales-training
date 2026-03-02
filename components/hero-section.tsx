@@ -3,7 +3,7 @@ import Image from "next/image"
 
 export function HeroSection() {
   return (
-    <section className="border-b border-border bg-gradient-to-b from-secondary/50 to-background py-16">
+    <section className="border-b border-border bg-linear-to-b from-secondary/50 to-background py-16">
       <div className="mx-auto max-w-6xl px-4">
         <div className="text-center">
           <Image

@@ -44,7 +44,7 @@ export default async function CategoryDeepDivePage({ params }: PageProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
-        <section className="border-b border-border bg-gradient-to-b from-amber-50 to-background py-12">
+        <section className="border-b border-border bg-linear-to-b from-amber-50 to-background py-12">
           <div className="mx-auto max-w-4xl px-4">
             <Link
               href={`/category/${category.id}`}

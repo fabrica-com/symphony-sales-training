@@ -9,7 +9,8 @@
     "start": "next start",
     "db:check": "bun run scripts/check-db.ts",
     "db:sync": "bun run scripts/sync-remote-to-local.ts",
-    "db:seed-category-deep-dive": "bun run scripts/seed-category-deep-dive-c.ts"
+    "db:seed-category-deep-dive": "bun run scripts/seed-category-deep-dive-c.ts",
+    "test": "vitest --run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -71,9 +72,12 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.4",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.0.18"
   },
   "packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8"
 }

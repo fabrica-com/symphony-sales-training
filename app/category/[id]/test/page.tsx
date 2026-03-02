@@ -54,24 +54,6 @@ export default function CategoryTestPage() {
     fetchData()
   }, [categoryId])
 
-  // Timer
-  useEffect(() => {
-    if (phase !== "test" || timeRemaining <= 0) return
-
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          // Time's up - submit test
-          handleSubmitTest()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [phase, timeRemaining])
-
   const handleSubmitTest = useCallback(() => {
     if (!test) return
     
@@ -94,6 +76,24 @@ export default function CategoryTestPage() {
       }, answers)
     }
   }, [test, answers, user, addTestResult, timeRemaining])
+
+  // Timer
+  useEffect(() => {
+    if (phase !== "test" || timeRemaining <= 0) return
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          // Time's up - submit test
+          handleSubmitTest()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [phase, timeRemaining, handleSubmitTest])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)

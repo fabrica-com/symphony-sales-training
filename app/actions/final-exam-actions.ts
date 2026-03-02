@@ -4,6 +4,7 @@ import { getFinalExamFromDb } from "@/lib/db/categories"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserId } from "@/lib/auth-server"
 import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
+import { log } from "@/lib/logger"
 
 export interface FinalExamResultPayload {
   answers: number[]
@@ -20,22 +21,32 @@ export async function saveFinalExamResultAction(payload: FinalExamResultPayload)
   try {
     const userId = await getCurrentUserId()
     if (!userId) {
+      log.security("UNAUTHORIZED_SAVE_FINAL_EXAM", {
+        action: "saveFinalExamResultAction",
+        reason: "no_authenticated_user",
+      })
       return { success: false, error: "Unauthorized" }
     }
 
+    log.info("SAVE_FINAL_EXAM_START", {
+      userId,
+      answerCount: payload.answers.length,
+      duration: payload.duration,
+    })
+
     const supabase = await createClient()
 
-    // 正解と設定をサーバーで取得
     const [{ data: config }, { data: questions }] = await Promise.all([
       supabase.from("final_exam_config").select("passing_score, total_questions").eq("id", 1).single(),
       supabase.from("final_exam_questions").select("question_number, correct_answer").order("question_number"),
     ])
 
     if (!config || !questions) {
+      log.error("SAVE_FINAL_EXAM_DATA_NOT_FOUND", { userId })
       return { success: false, error: "Exam data not found" }
     }
 
-    // サーバーで採点
+    // サーバー側採点（クライアントの答えを信頼しない）
     let correctCount = 0
     for (let i = 0; i < questions.length; i++) {
       if (payload.answers[i] === questions[i].correct_answer) correctCount++
@@ -55,20 +66,33 @@ export async function saveFinalExamResultAction(payload: FinalExamResultPayload)
     })
 
     if (error) {
-      console.error("Failed to save final exam result:", error)
+      log.error("SAVE_FINAL_EXAM_DB_ERROR", {
+        userId,
+        table: "final_exam_results",
+        message: error.message,
+        code: error.code,
+      })
       return { success: false, error: error.message }
     }
+
+    log.info("SAVE_FINAL_EXAM_SUCCESS", {
+      userId,
+      correctCount,
+      total: config.total_questions,
+      percentage,
+      passed,
+    })
 
     await notifyChatworkTaskCompleted({
       kind: "final_exam",
       userId,
       percentage,
       passed,
-    }).catch(() => {})
+    }).catch((e) => log.error("CHATWORK_NOTIFY_ERROR", { userId, event: "final_exam", message: String(e) }))
 
     return { success: true, score: correctCount, percentage, passed }
   } catch (error) {
-    console.error("Error saving final exam result:", error)
+    log.error("SAVE_FINAL_EXAM_EXCEPTION", { message: String(error) })
     return { success: false, error: "Failed to save result" }
   }
 }
@@ -77,7 +101,10 @@ export async function saveFinalExamResultAction(payload: FinalExamResultPayload)
 export async function getFinalExamResultsAction() {
   try {
     const userId = await getCurrentUserId()
-    if (!userId) return []
+    if (!userId) {
+      log.info("GET_FINAL_EXAM_RESULTS_NO_SESSION")
+      return []
+    }
 
     const supabase = await createClient()
 
@@ -88,13 +115,17 @@ export async function getFinalExamResultsAction() {
       .order("completed_at", { ascending: false })
 
     if (error) {
-      console.error("Failed to fetch final exam results:", error)
+      log.error("GET_FINAL_EXAM_RESULTS_ERROR", {
+        userId,
+        message: error.message,
+        code: error.code,
+      })
       return []
     }
 
     return data
   } catch (error) {
-    console.error("Error fetching final exam results:", error)
+    log.error("GET_FINAL_EXAM_RESULTS_EXCEPTION", { message: String(error) })
     return []
   }
 }
@@ -115,13 +146,17 @@ export async function checkFinalExamPassedAction() {
       .limit(1)
 
     if (error) {
-      console.error("Failed to check final exam passed:", error)
+      log.error("CHECK_FINAL_EXAM_PASSED_ERROR", {
+        userId,
+        message: error.message,
+        code: error.code,
+      })
       return false
     }
 
     return data != null && data.length > 0
   } catch (error) {
-    console.error("Error checking final exam passed:", error)
+    log.error("CHECK_FINAL_EXAM_PASSED_EXCEPTION", { message: String(error) })
     return false
   }
 }

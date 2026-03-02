@@ -27,7 +27,7 @@ export default async function HomePage() {
         </section>
 
         {/* Final Exam Section */}
-        <section className="py-12 bg-gradient-to-b from-background to-muted/30">
+        <section className="py-12 bg-linear-to-b from-background to-muted/30">
           <div className="mx-auto max-w-6xl px-4">
             <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur">
               <CardHeader className="text-center pb-2">

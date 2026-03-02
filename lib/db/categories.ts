@@ -1,20 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
 import type { Category } from "@/lib/training-data"
-import type { DbCategory } from "@/lib/db/types"
-
-// DBのカテゴリをフロントエンドの型に変換（同期関数、クライアントからは呼び出さない）
-function mapDbCategoryToCategory(dbCategory: DbCategory, trainings: Category["trainings"] = []): Category {
-  return {
-    id: dbCategory.id,
-    name: dbCategory.name,
-    description: dbCategory.description,
-    totalDuration: dbCategory.total_duration,
-    targetLevel: dbCategory.target_level,
-    color: dbCategory.color,
-    trainings,
-  }
-}
 
 // 全カテゴリを取得（トレーニング数を含む）
 export async function getAllCategories(): Promise<Category[]> {
