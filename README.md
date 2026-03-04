@@ -140,8 +140,6 @@ supabase migration up   # 未適用マイグレーションのみ適用
 - `.agents/skills/` に Supabase/PostgreSQL ベストプラクティスのスキルがある
 - `.kiro/specs/` に E2E テストの設計書がある
 - `.archive/` は参照用の旧シードスクリプト（本番では使わない）
-- 会社名は「株式会社ファブリカコミュニケーションズ」
 
 ## ライセンス
-
 Private
