@@ -15,24 +15,14 @@ export interface DbCategory {
   training_count?: number
 }
 
-// Test-related types
-export interface CategoryTestQuestion {
-  id: number
-  question: string
-  options: string[]
-  correctAnswer: number
-  explanation: string
-  source: string
-}
-
-export interface CategoryTest {
-  categoryId: string
-  categoryName: string
-  totalQuestions: number
-  passingScore: number
-  timeLimit: number
-  questions: CategoryTestQuestion[]
-}
+// Re-export test types from the canonical source
+export type {
+  TestQuestion,
+  TestQuestionFull,
+  CategoryTest,
+  QuestionResult,
+  TestGradingResult,
+} from "@/lib/test-data"
 
 // Re-export Category for convenience
 export type { Category }

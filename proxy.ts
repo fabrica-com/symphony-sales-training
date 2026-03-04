@@ -20,12 +20,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/favicon.ico") ||
     /\.(svg|png|jpg|jpeg|gif|webp|ico)$/.test(pathname)
 
-  // 3. 【凍結ガード】/admin/* は実装凍結中 → 404 を返す
-  if (pathname.startsWith("/admin")) {
-    return new NextResponse(null, { status: 404 })
-  }
-
-  // 4. 【認証ガード】未ログインかつ公開パス以外の場合は /login へリダイレクト
+  // 3. 【認証ガード】未ログインかつ公開パス以外の場合は /login へリダイレクト
   if (!user && !isPublicPath) {
     const loginUrl = new URL("/login", request.url)
     // 元のURLを保存して、ログイン後に戻れるようにする
@@ -33,7 +28,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // 5. ログイン済みユーザーが /login にアクセスした場合は /dashboard へリダイレクト
+  // 4. ログイン済みユーザーが /login にアクセスした場合は /dashboard へリダイレクト
   if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }

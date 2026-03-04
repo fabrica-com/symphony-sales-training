@@ -1,10 +1,54 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
+import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { saveTrainingSession, saveTestResult } from "@/app/actions/training-actions"
+import { saveTrainingSession } from "@/app/actions/training-actions"
 import { loadUserDataFromServer } from "@/app/actions/user-actions"
+
+// --- DB Row Types (from loadUserDataFromServer) ---
+interface SessionRow {
+  id: string
+  training_id: number
+  training_title: string
+  category_id: string
+  category_name: string
+  created_at: string
+  overall_score: number
+  max_score: number
+  duration_seconds: number
+  attempt_number: number
+}
+
+interface ProgressRow {
+  training_id: number
+  completed_count?: number
+  best_score?: number
+  completed_at?: string
+  updated_at?: string
+  total_time_spent?: number
+}
+
+interface TestResultRow {
+  id: string
+  category_id: string
+  category_name: string
+  created_at: string
+  score: number
+  percentage: number
+  passed: boolean
+  correct_count: number
+  total_questions: number
+  duration: number
+  attempt_number: number
+}
+
+interface ProfileRow {
+  name?: string
+  department?: string
+  join_date?: string
+  role?: "employee" | "manager"
+}
 
 // --- Types ---
 export interface User {
@@ -13,7 +57,7 @@ export interface User {
   name: string
   department: string
   joinDate: string
-  role: "employee" | "manager" | "admin"
+  role: "employee" | "manager"
 }
 
 export interface TrainingLog {
@@ -64,12 +108,10 @@ interface AuthContextType {
   userProgress: Record<number, UserProgress>
   addTrainingLog: (log: Omit<TrainingLog, "id" | "attemptNumber">) => Promise<void>
   testResults: TestResult[]
-  addTestResult: (result: Omit<TestResult, "id" | "attemptNumber">, answers: number[]) => Promise<void>
   getTestResultsByCategory: (categoryId: string) => TestResult[]
   getBestTestResult: (categoryId: string) => TestResult | undefined
   getTotalPoints: () => number
   getCompletedTrainings: () => number
-  getProgressPercentage: (total?: number) => number
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -90,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Training Logs
       if (result.sessions) {
-        const logs: TrainingLog[] = result.sessions.map((s: any) => ({
+        const logs: TrainingLog[] = result.sessions.map((s: SessionRow) => ({
           id: s.id,
           odaiNumber: s.training_id,
           trainingTitle: s.training_title || `トレーニング ${s.training_id}`,
@@ -108,12 +150,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // User Progress
       if (result.progress) {
         const progressObj: Record<number, UserProgress> = {}
-        result.progress.forEach((p: any) => {
+        result.progress.forEach((p: ProgressRow) => {
           progressObj[p.training_id] = {
             odaiNumber: p.training_id,
             completedCount: p.completed_count || 1,
             bestScore: p.best_score || 0,
-            lastCompletedAt: p.completed_at || p.updated_at,
+            lastCompletedAt: p.completed_at || p.updated_at || "",
             totalTimeSpent: p.total_time_spent || 0,
           }
         })
@@ -122,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Test Results
       if (result.tests) {
-        const tests: TestResult[] = result.tests.map((t: any) => ({
+        const tests: TestResult[] = result.tests.map((t: TestResultRow) => ({
           id: t.id,
           categoryId: t.category_id,
           categoryName: t.category_name || "",
@@ -142,14 +184,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const waitForProfile = useCallback(async (userId: string, maxRetries = 10): Promise<any> => {
+  const waitForProfile = useCallback(async (userId: string, maxRetries = 10): Promise<ProfileRow | null> => {
     const supabaseClient = createClient()
     for (let i = 0; i < maxRetries; i++) {
       const { data: profile, error } = await supabaseClient.from("profiles").select("*").eq("id", userId).single()
       if (profile && !error) return profile
       if (error && error.code !== 'PGRST116') {
-        // PGRST116 is "not found" error, which is expected
-        console.error("[Auth] Error fetching profile:", error)
+        // PGRST116 以外かつ中身のあるエラーのみログ
+        if (error.message) {
+          console.warn("[Auth] Profile fetch retry warning:", error.message)
+        }
       }
       if (i < maxRetries - 1) {
         await new Promise(res => setTimeout(res, 500))
@@ -158,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null
   }, [])
 
-  const handleUserSession = useCallback(async (session: any, isNewUser = false) => {
+  const handleUserSession = useCallback(async (session: { user: { id: string; email?: string; user_metadata?: Record<string, string> } }, isNewUser = false) => {
     if (!session?.user) {
       setUser(null)
       return
@@ -174,7 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 既存ユーザーの場合：すぐにプロファイルを取得
         const { data, error } = await supabaseClient.from("profiles").select("*").eq("id", session.user.id).single()
         if (error && error.code !== 'PGRST116') {
-          console.error("[Auth] Error fetching profile:", error)
+          // PGRST116 以外かつ中身のあるエラーのみログ
+          if (error.message) {
+            console.warn("[Auth] Profile fetch warning:", error.message)
+          }
         }
         profile = data
       }
@@ -199,62 +246,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let initialized = false
     const supabaseClient = createClient()
 
-    const initAuth = async () => {
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      if (mounted && session) {
-        // 既存セッションの場合、プロファイルが存在するかチェック
-        const { data: existingProfile } = await supabaseClient
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single()
-        const isNewUser = !existingProfile
-        await handleUserSession(session, isNewUser)
-      }
-      if (mounted) setIsLoading(false)
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
 
-      const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        if (!mounted) return
-        
-        if (event === "INITIAL_SESSION" && session) {
-          // 初期セッション（ページロード時）
-          const { data: existingProfile } = await supabaseClient
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .single()
-          const isNewUser = !existingProfile
-          await handleUserSession(session, isNewUser)
-          if (mounted) setIsLoading(false)
-        } else if (event === "SIGNED_IN" && session) {
-          // OAuthログインなど、新しいサインイン
-          setIsLoading(true)
-          // プロファイルが既に存在するかチェック（新規ユーザー判定）
-          const { data: existingProfile } = await supabaseClient
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .single()
-          const isNewUser = !existingProfile
-          await handleUserSession(session, isNewUser)
-          if (mounted) setIsLoading(false)
-        } else if (event === "SIGNED_OUT") {
-          setUser(null)
-          setTrainingLogs([])
-          setUserProgress({})
-          setTestResults([])
+      if (event === "INITIAL_SESSION") {
+        // ページロード時の初期セッション（1回だけ発火）
+        if (session) {
+          await handleUserSession(session, false)
         }
-      })
+        initialized = true
+        if (mounted) setIsLoading(false)
+      } else if (event === "SIGNED_IN" && session && initialized) {
+        // OAuthコールバック等の新規サインイン（INITIAL_SESSION後のみ処理）
+        setIsLoading(true)
+        await handleUserSession(session, true)
+        if (mounted) setIsLoading(false)
+      } else if (event === "SIGNED_OUT") {
+        setUser(null)
+        setTrainingLogs([])
+        setUserProgress({})
+        setTestResults([])
+      }
+    })
 
-      return subscription
-    }
-
-    const subPromise = initAuth()
     return () => {
       mounted = false
-      subPromise.then(sub => sub?.unsubscribe())
+      subscription.unsubscribe()
     }
   }, [handleUserSession])
 
@@ -262,7 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async (): Promise<void> => {
     const supabaseClient = createClient()
-    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+    const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000")
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -318,23 +338,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
-  const addTestResult = async (result: Omit<TestResult, "id" | "attemptNumber">, answers: number[]) => {
-    if (!user) return
-    const attemptNumber = testResults.filter(t => t.categoryId === result.categoryId).length + 1
-
-    // in-memory state は client 採点値で即時更新（表示用）
-    const newResult: TestResult = { ...result, id: crypto.randomUUID(), attemptNumber }
-    setTestResults(prev => [newResult, ...prev])
-
-    // DB 保存はサーバー側で正解を取得して再採点
-    await saveTestResult({
-      categoryId: result.categoryId,
-      duration: result.duration,
-      attemptNumber,
-      answers,
-    })
-  }
-
   // --- Getters ---
   const getTestResultsByCategory = (cid: string) => testResults.filter(t => t.categoryId === cid)
   const getBestTestResult = (cid: string) => {
@@ -343,15 +346,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
   const getTotalPoints = () => trainingLogs.reduce((s, l) => s + l.score, 0)
   const getCompletedTrainings = () => Object.keys(userProgress).length
-  /** @deprecated totalTrainingCount を渡してください。ハードコード 100 を避けるため dashboard 側で直接計算を推奨 */
-  const getProgressPercentage = (total = 0) =>
-    total > 0 ? Math.round((getCompletedTrainings() / total) * 100) : 0
 
   return (
     <AuthContext.Provider value={{
       user, isLoading, loginWithGoogle, logout, trainingLogs, userProgress,
-      addTrainingLog, testResults, addTestResult, getTestResultsByCategory,
-      getBestTestResult, getTotalPoints, getCompletedTrainings, getProgressPercentage
+      addTrainingLog, testResults, getTestResultsByCategory,
+      getBestTestResult, getTotalPoints, getCompletedTrainings
     }}>
       {children}
     </AuthContext.Provider>

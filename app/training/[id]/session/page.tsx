@@ -4,7 +4,6 @@ import { ArrowLeft, Construction } from "lucide-react"
 import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
 import { getSessionContentFromDB } from "@/lib/session-data"
 import { SessionClient } from "./session-client"
-import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +30,6 @@ export default async function SessionPage({
   if (!sessionContent) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <Header />
         <main className="flex flex-1 items-center justify-center p-4">
           <Card className="max-w-md w-full text-center">
             <CardHeader>

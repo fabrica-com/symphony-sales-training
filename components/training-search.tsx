@@ -1,8 +1,7 @@
 "use client"
 
-import React from "react"
-
 import { useState, useEffect, useRef, useCallback } from "react"
+import type React from "react"
 import { Search, X, Clock, BookOpen } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import type { Training, Category } from "@/lib/training-data"
@@ -214,7 +213,7 @@ export function TrainingSearch({ onResultClick }: TrainingSearchProps = {}) {
           break
       }
     },
-    [isOpen, results, selectedIndex]
+    [isOpen, results, selectedIndex, query]
   )
 
   const handleClear = () => {
@@ -223,11 +222,11 @@ export function TrainingSearch({ onResultClick }: TrainingSearchProps = {}) {
     inputRef.current?.focus()
   }
 
-const handleResultClick = () => {
-  setIsOpen(false)
-  setQuery("")
-  setResults([])
-  onResultClick?.()
+  const handleResultClick = () => {
+    setIsOpen(false)
+    setQuery("")
+    setResults([])
+    onResultClick?.()
   }
 
   return (

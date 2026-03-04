@@ -1,18 +1,34 @@
 "use server"
 
 import { getCategoryByIdFromDb, getCategoryTestFromDb } from "@/lib/db/categories"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function getCategoryByIdAction(categoryId: string) {
   return await getCategoryByIdFromDb(categoryId)
 }
 
 export async function getCategoryTestAction(categoryId: string) {
-  return await getCategoryTestFromDb(categoryId)
+  const full = await getCategoryTestFromDb(categoryId)
+  if (!full) return null
+
+  // correctAnswer と explanation をクライアントに送らない
+  return {
+    categoryId: full.categoryId,
+    categoryName: full.categoryName,
+    totalQuestions: full.totalQuestions,
+    passingScore: full.passingScore,
+    timeLimit: full.timeLimit,
+    questions: full.questions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      source: q.source,
+    })),
+  }
 }
 
 export async function getAllCategoriesWithTrainingsAction() {
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
 
   const { data: categories, error } = await supabase
     .from("training_categories")
@@ -51,3 +67,17 @@ export async function getAllCategoriesWithTrainingsAction() {
       })),
   }))
 }
+
+// カテゴリID・名前のみ取得（軽量版、出題範囲表示用など）
+export async function getAllCategoryNamesAction(): Promise<{ id: string; name: string }[]> {
+  const supabase = await createAdminClient()
+
+  const { data, error } = await supabase
+    .from("training_categories")
+    .select("id, name")
+    .order("display_order")
+
+  if (error || !data) return []
+  return data.map((c) => ({ id: c.id, name: c.name }))
+}
+

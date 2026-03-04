@@ -48,7 +48,7 @@ export default function LoginPage() {
             <div className="mx-auto mb-4 flex justify-center">
               <Image
                 src="/symphony-logo.svg"
-                alt="Symphony研修"
+                alt="symphony研修"
                 width={580}
                 height={104}
                 className="h-12 w-auto"
@@ -109,7 +109,7 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="border-t bg-white py-4">
         <div className="mx-auto max-w-7xl px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 ファブリカホールディングス. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} 株式会社ファブリカコミュニケーションズ. All rights reserved.</p>
         </div>
       </footer>
     </div>

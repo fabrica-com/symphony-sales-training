@@ -166,7 +166,7 @@ interface Profile {
   name: string
   department: string
   join_date: string   // DATE
-  role: 'employee' | 'manager' | 'admin'
+  role: 'employee' | 'manager'
 }
 
 // training_sessions（研修セッション記録）

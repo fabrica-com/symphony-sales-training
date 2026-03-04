@@ -22,63 +22,63 @@ export async function loadUserDataFromServer() {
 
     const supabase = await createAdminClient()
 
-    const { data: sessions, error: sessionsError } = await supabase
-      .from("training_sessions")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+    const [sessionsResult, progressResult, testsResult] = await Promise.all([
+      supabase
+        .from("training_sessions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("user_training_progress")
+        .select("*")
+        .eq("user_id", userId),
+      supabase
+        .from("category_test_results")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
+    ])
 
-    if (sessionsError) {
+    if (sessionsResult.error) {
       log.error("LOAD_USER_DATA_SESSIONS_ERROR", {
         userId,
         table: "training_sessions",
-        message: sessionsError.message,
-        code: sessionsError.code,
+        message: sessionsResult.error.message,
+        code: sessionsResult.error.code,
       })
-      return { success: false, error: sessionsError.message }
+      return { success: false, error: sessionsResult.error.message }
     }
 
-    const { data: progress, error: progressError } = await supabase
-      .from("user_training_progress")
-      .select("*")
-      .eq("user_id", userId)
-
-    if (progressError) {
+    if (progressResult.error) {
       log.error("LOAD_USER_DATA_PROGRESS_ERROR", {
         userId,
         table: "user_training_progress",
-        message: progressError.message,
-        code: progressError.code,
+        message: progressResult.error.message,
+        code: progressResult.error.code,
       })
     }
 
-    const { data: tests, error: testsError } = await supabase
-      .from("category_test_results")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-
-    if (testsError) {
+    if (testsResult.error) {
       log.error("LOAD_USER_DATA_TESTS_ERROR", {
         userId,
         table: "category_test_results",
-        message: testsError.message,
-        code: testsError.code,
+        message: testsResult.error.message,
+        code: testsResult.error.code,
       })
     }
 
     log.info("LOAD_USER_DATA_SUCCESS", {
       userId,
-      sessionCount: sessions?.length ?? 0,
-      progressCount: progress?.length ?? 0,
-      testCount: tests?.length ?? 0,
+      sessionCount: sessionsResult.data?.length ?? 0,
+      progressCount: progressResult.data?.length ?? 0,
+      testCount: testsResult.data?.length ?? 0,
     })
 
     return {
       success: true,
-      sessions: sessions ?? [],
-      progress: progress ?? [],
-      tests: tests ?? [],
+      sessions: sessionsResult.data ?? [],
+      progress: progressResult.data ?? [],
+      tests: testsResult.data ?? [],
     }
   } catch (error) {
     log.error("LOAD_USER_DATA_EXCEPTION", { message: String(error) })

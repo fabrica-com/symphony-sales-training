@@ -33,7 +33,7 @@ export async function getAllCategories(): Promise<Category[]> {
     })
   }
 
-  // カテゴリを変換（trainingsは空配列、代わりにtraining_countを使用）
+  // カテゴリを変換
   return categories.map((cat) => ({
     id: cat.id,
     name: cat.name,
@@ -41,7 +41,8 @@ export async function getAllCategories(): Promise<Category[]> {
     totalDuration: cat.total_duration,
     targetLevel: cat.target_level,
     color: cat.color,
-    trainings: Array(countMap[cat.id] || 0).fill({}), // カード表示用にダミー配列
+    trainingCount: countMap[cat.id] || 0,
+    trainings: [],
   }))
 }
 
@@ -73,15 +74,22 @@ export async function getCategoryByIdFromDb(id: string): Promise<Category | null
 
   const trainingIds = (trainings ?? []).map((t) => t.id)
   let hasDeepDive = false
+
   if (trainingIds.length > 0) {
-    const { count } = await supabase
-      .from("deep_dive_contents")
-      .select("*", { count: "exact", head: true })
-      .in("training_id", trainingIds)
-    hasDeepDive = (count ?? 0) > 0
-  }
-  // カテゴリ単位の深掘り（category_deep_dive_contents）があれば true
-  if (!hasDeepDive) {
+    // 並列実行: トレーニング単位とカテゴリ単位の深掘りを同時にチェック
+    const [deepDiveResult, categoryDeepDiveResult] = await Promise.all([
+      supabase
+        .from("deep_dive_contents")
+        .select("*", { count: "exact", head: true })
+        .in("training_id", trainingIds),
+      supabase
+        .from("category_deep_dive_contents")
+        .select("*", { count: "exact", head: true })
+        .eq("category_id", id),
+    ])
+    hasDeepDive = (deepDiveResult.count ?? 0) > 0 || (categoryDeepDiveResult.count ?? 0) > 0
+  } else {
+    // トレーニングがない場合はカテゴリ単位のみチェック
     const { count: categoryCount } = await supabase
       .from("category_deep_dive_contents")
       .select("*", { count: "exact", head: true })
@@ -280,7 +288,10 @@ export async function getCategoryTestFromDb(categoryId: string): Promise<Categor
     .single()
 
   if (testError || !testData) {
-    console.error("Error fetching category test:", testError)
+    // PGRST116 = "not found" (single row expected but 0 returned) — normal for categories without a test
+    if (testError?.code !== "PGRST116") {
+      console.error("Error fetching category test:", testError)
+    }
     return null
   }
 
@@ -379,26 +390,31 @@ export interface FinalExam {
 export async function getFinalExamFromDb(): Promise<FinalExam | null> {
   const supabase = await createClient()
 
-  const { data: config, error: configError } = await supabase
-    .from("final_exam_config")
-    .select("*")
-    .eq("id", 1)
-    .single()
+  // 並列実行: config と questions を同時に取得
+  const [configResult, questionsResult] = await Promise.all([
+    supabase
+      .from("final_exam_config")
+      .select("*")
+      .eq("id", 1)
+      .single(),
+    supabase
+      .from("final_exam_questions")
+      .select("*")
+      .order("question_number"),
+  ])
 
-  if (configError || !config) {
-    console.error("Error fetching final exam config:", configError)
+  if (configResult.error || !configResult.data) {
+    console.error("Error fetching final exam config:", configResult.error)
     return null
   }
 
-  const { data: questions, error: questionsError } = await supabase
-    .from("final_exam_questions")
-    .select("*")
-    .order("question_number")
-
-  if (questionsError || !questions) {
-    console.error("Error fetching final exam questions:", questionsError)
+  if (questionsResult.error || !questionsResult.data) {
+    console.error("Error fetching final exam questions:", questionsResult.error)
     return null
   }
+
+  const config = configResult.data
+  const questions = questionsResult.data
 
   return {
     totalQuestions: config.total_questions,

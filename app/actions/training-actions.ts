@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCurrentUserId } from "@/lib/auth-server"
 import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
+import { clampScore } from "@/lib/score-calc"
 import { log } from "@/lib/logger"
 
 export async function saveTrainingSession(data: {
@@ -41,10 +42,7 @@ export async function saveTrainingSession(data: {
 
     const supabase = await createAdminClient()
 
-    const scoreValue = data.score ?? 0
-    const isValidScore = !isNaN(scoreValue) && isFinite(scoreValue)
-    const finalScore = isValidScore ? scoreValue : 0
-    const validScore = Math.min(data.maxScore, Math.max(0, Math.round(finalScore)))
+    const validScore = clampScore(data.score, data.maxScore)
 
     const { error: sessionError } = await supabase.from("training_sessions").insert({
       user_id: userId,
@@ -127,30 +125,17 @@ export async function saveTrainingSession(data: {
   }
 }
 
-export async function saveTestResult(data: {
+/**
+ * テスト提出＋サーバー採点。ログイン済みなら DB 保存も行う。
+ * 正解・解説は採点後にのみ返す（テスト中はクライアントに渡さない）。
+ */
+export async function submitAndGradeTestAction(data: {
   categoryId: string
   duration: number
-  attemptNumber: number
   answers: number[]
 }) {
   try {
     const userId = await getCurrentUserId()
-    if (!userId) {
-      log.security("UNAUTHORIZED_SAVE_TEST_RESULT", {
-        action: "saveTestResult",
-        categoryId: data.categoryId,
-        reason: "no_authenticated_user",
-      })
-      return { success: false, error: "Unauthorized" }
-    }
-
-    log.info("SAVE_TEST_RESULT_START", {
-      userId,
-      categoryId: data.categoryId,
-      attemptNumber: data.attemptNumber,
-      answerCount: data.answers.length,
-    })
-
     const supabase = await createAdminClient()
 
     const { data: testConfig, error: configError } = await supabase
@@ -160,85 +145,101 @@ export async function saveTestResult(data: {
       .single()
 
     if (configError || !testConfig) {
-      log.error("SAVE_TEST_RESULT_CONFIG_ERROR", {
-        userId,
-        categoryId: data.categoryId,
-        message: configError?.message,
-      })
       return { success: false, error: "Test config not found" }
     }
 
     const { data: questions, error: questionsError } = await supabase
       .from("category_test_questions")
-      .select("question_number, correct_answer")
+      .select("question_number, correct_answer, question, options, explanation, source")
       .eq("category_test_id", testConfig.id)
       .order("question_number")
 
     if (questionsError || !questions) {
-      log.error("SAVE_TEST_RESULT_QUESTIONS_ERROR", {
-        userId,
-        categoryId: data.categoryId,
-        testConfigId: testConfig.id,
-        message: questionsError?.message,
-      })
       return { success: false, error: "Questions not found" }
     }
 
-    // サーバー側採点（クライアントの答えを信頼しない）
+    // サーバー側採点
     let correctCount = 0
     for (let i = 0; i < questions.length; i++) {
       if (data.answers[i] === questions[i].correct_answer) correctCount++
     }
     const percentage = Math.round((correctCount / testConfig.total_questions) * 100)
     const passed = percentage >= testConfig.passing_score
-    // NOTE: 1問2pt 固定。将来的に category_test_questions.points カラムで動的化予定
     const score = correctCount * 2
 
-    const { error } = await supabase.from("category_test_results").insert({
-      user_id: userId,
-      category_id: data.categoryId,
-      category_name: testConfig.category_name,
+    // ログイン済みなら DB 保存
+    let attemptNumber = 1
+    if (userId) {
+      const { data: prevResults } = await supabase
+        .from("category_test_results")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("category_id", data.categoryId)
+
+      attemptNumber = (prevResults?.length ?? 0) + 1
+
+      const { error: insertError } = await supabase.from("category_test_results").insert({
+        user_id: userId,
+        category_id: data.categoryId,
+        category_name: testConfig.category_name,
+        score,
+        percentage,
+        passed,
+        correct_count: correctCount,
+        total_questions: testConfig.total_questions,
+        duration_seconds: data.duration,
+        attempt_number: attemptNumber,
+      })
+
+      if (insertError) {
+        log.error("GRADE_TEST_DB_ERROR", {
+          userId,
+          categoryId: data.categoryId,
+          message: insertError.message,
+        })
+      }
+
+      // Chatwork 通知
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", userId)
+        .single()
+
+      await notifyChatworkTaskCompleted({
+        kind: "category_test",
+        userId,
+        categoryId: data.categoryId,
+        categoryName: testConfig.category_name,
+        percentage,
+        passed,
+        score,
+        totalQuestions: testConfig.total_questions,
+        userName: profile?.name ?? undefined,
+      }).catch((e) => log.error("CHATWORK_NOTIFY_ERROR", { userId, event: "category_test", message: String(e) }))
+    }
+
+    return {
+      success: true,
       score,
       percentage,
       passed,
-      correct_count: correctCount,
-      total_questions: testConfig.total_questions,
-      duration: data.duration,
-      attempt_number: data.attemptNumber,
-    })
-
-    if (error) {
-      log.error("SAVE_TEST_RESULT_DB_ERROR", {
-        userId,
-        categoryId: data.categoryId,
-        table: "category_test_results",
-        message: error.message,
-        code: error.code,
-      })
-      return { success: false, error: error.message }
-    }
-
-    log.info("SAVE_TEST_RESULT_SUCCESS", {
-      userId,
-      categoryId: data.categoryId,
       correctCount,
-      total: testConfig.total_questions,
-      percentage,
-      passed,
-    })
-
-    await notifyChatworkTaskCompleted({
-      kind: "category_test",
-      userId,
-      categoryId: data.categoryId,
+      incorrectCount: testConfig.total_questions - correctCount,
+      attemptNumber,
       categoryName: testConfig.category_name,
-      percentage,
-      passed,
-    }).catch((e) => log.error("CHATWORK_NOTIFY_ERROR", { userId, event: "category_test", message: String(e) }))
-
-    return { success: true, score, percentage, passed, correctCount }
+      questionResults: questions.map((q, i) => ({
+        question: q.question,
+        options: q.options as string[],
+        source: q.source,
+        userAnswer: data.answers[i] ?? -1,
+        correctAnswer: q.correct_answer,
+        isCorrect: data.answers[i] === q.correct_answer,
+        explanation: q.explanation,
+      })),
+    }
   } catch (error) {
-    log.error("SAVE_TEST_RESULT_EXCEPTION", {
+    log.error("GRADE_TEST_EXCEPTION", {
       categoryId: data.categoryId,
       message: String(error),
     })

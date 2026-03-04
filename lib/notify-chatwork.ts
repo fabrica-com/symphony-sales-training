@@ -4,6 +4,62 @@
  * CHATWORK_API_TOKEN / CHATWORK_ROOM_ID が未設定の場合はログのみ（モック）。
  */
 
+import { readFileSync, writeFileSync, mkdirSync } from "fs"
+import { join } from "path"
+
+// E2Eテスト用: 通知をファイルに保持（dev環境のみ）
+const NOTIFY_LOG_DIR = join(process.cwd(), ".logs")
+const NOTIFY_LOG_FILE = join(NOTIFY_LOG_DIR, "notifications.json")
+const MAX_RECENT = 20
+
+interface StoredNotification {
+  timestamp: string
+  kind: string
+  message: string
+  payload: Record<string, unknown>
+}
+
+function readNotificationsFile(): StoredNotification[] {
+  try {
+    const raw = readFileSync(NOTIFY_LOG_FILE, "utf-8")
+    return JSON.parse(raw)
+  } catch {
+    return []
+  }
+}
+
+function writeNotificationsFile(data: StoredNotification[]) {
+  try {
+    mkdirSync(NOTIFY_LOG_DIR, { recursive: true })
+    writeFileSync(NOTIFY_LOG_FILE, JSON.stringify(data, null, 2))
+  } catch (e) {
+    console.warn("[notify-chatwork] ファイル書き込み失敗:", e)
+  }
+}
+
+export function getRecentNotifications(): StoredNotification[] {
+  return readNotificationsFile()
+}
+
+export function clearRecentNotifications() {
+  writeNotificationsFile([])
+}
+
+function recordNotification(kind: string, message: string, payload: Record<string, unknown>) {
+  const notifications = readNotificationsFile()
+  notifications.push({
+    timestamp: new Date().toISOString(),
+    kind,
+    message,
+    payload,
+  })
+  // 古いものを削除
+  while (notifications.length > MAX_RECENT) {
+    notifications.shift()
+  }
+  writeNotificationsFile(notifications)
+}
+
 export type NotifyTaskCompletedPayload =
   | {
       kind: "training"
@@ -19,8 +75,8 @@ export type NotifyTaskCompletedPayload =
       reflectionText?: string
       workAnswers?: { label: string; value: string }[]
     }
-  | { kind: "category_test"; userId: string; categoryId: string; categoryName: string; percentage: number; passed: boolean }
-  | { kind: "final_exam"; userId: string; percentage: number; passed: boolean }
+  | { kind: "category_test"; userId: string; categoryId: string; categoryName: string; percentage: number; passed: boolean; score: number; totalQuestions: number; userName?: string }
+  | { kind: "final_exam"; userId: string; percentage: number; passed: boolean; score: number; totalQuestions: number; userName?: string }
 
 async function sendChatwork(message: string): Promise<void> {
   const token = process.env.CHATWORK_API_TOKEN
@@ -79,19 +135,28 @@ export async function notifyChatworkTaskCompleted(payload: NotifyTaskCompletedPa
 
     const body = lines.join("\n")
     const message = `[info][title]研修完了通知[/title]${body}[/info]`
+    recordNotification("training", message, payload as unknown as Record<string, unknown>)
     await sendChatwork(message)
   } else if (payload.kind === "category_test") {
     const result = payload.passed ? "✅ 合格" : "❌ 不合格"
     const body = [
+      `ユーザー: ${payload.userName ?? payload.userId}`,
       `カテゴリ: ${payload.categoryName}`,
-      `結果: ${payload.percentage}% ${result}`,
+      `スコア: ${payload.score} / ${payload.totalQuestions * 2} pt（${payload.percentage}%）`,
+      `結果: ${result}`,
     ].join("\n")
     const message = `[info][title]カテゴリテスト完了[/title]${body}[/info]`
+    recordNotification("category_test", message, payload as unknown as Record<string, unknown>)
     await sendChatwork(message)
   } else if (payload.kind === "final_exam") {
     const result = payload.passed ? "✅ 合格" : "❌ 不合格"
-    const body = `結果: ${payload.percentage}% ${result}`
+    const body = [
+      `ユーザー: ${payload.userName ?? payload.userId}`,
+      `スコア: ${payload.score} / ${payload.totalQuestions} 問正解（${payload.percentage}%）`,
+      `結果: ${result}`,
+    ].join("\n")
     const message = `[info][title]修了テスト完了[/title]${body}[/info]`
+    recordNotification("final_exam", message, payload as unknown as Record<string, unknown>)
     await sendChatwork(message)
   }
 }
