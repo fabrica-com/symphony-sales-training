@@ -6,7 +6,6 @@ import { TrainingItem } from "@/components/training-item"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getCategoryByIdFromDb, getCategoryTestFromDb } from "@/lib/db/categories"
-import Header from "@/components/header"
 
 interface CategoryPageProps {
   params: Promise<{ id: string }>
@@ -29,7 +28,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         <section className="border-b border-border bg-linear-to-b from-secondary/50 to-background py-12">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <Link
               href="/"
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -72,7 +71,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </section>
 
         <section className="py-8">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <h2 className="mb-6 text-xl font-semibold">研修一覧</h2>
             <div className="space-y-3">
               {category.trainings.map((training) => (

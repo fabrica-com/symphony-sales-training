@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils"
 import type { Training, Category } from "@/lib/training-data"
 import type { SessionContent, DeepDiveReading } from "@/lib/session-data/types"
 import { useAuth } from "@/lib/auth-context"
+import { computeMaxScore } from "@/lib/score-calc"
 
 type SessionPhase =
   | "checkin"
@@ -93,7 +94,6 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
   const [showSimulationResult, setShowSimulationResult] = useState(false)
   const [roleplayIndex, setRoleplayIndex] = useState(0)
   const [roleplayDialogueIndex, setRoleplayDialogueIndex] = useState(0)
-  const [roleplayUserInput, setRoleplayUserInput] = useState("")
   const [roleplayComplete, setRoleplayComplete] = useState(false)
   const [reflectionText, setReflectionText] = useState("")
   const [selectedAction, setSelectedAction] = useState<string | null>(null)
@@ -102,6 +102,8 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
 
   const [expandedSections, setExpandedSections] = useState<number[]>([])
   const [deepDiveRead, setDeepDiveRead] = useState(false)
+
+  const deepDiveContent = deepDiveContentProp ?? null
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -113,18 +115,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
   // Log training completion when reaching ending phase
   useEffect(() => {
     if (currentPhase === "ending" && !hasLoggedCompletion && user) {
-      const simMax = (sessionContent.simulation ?? []).reduce(
-        (sum, scene) =>
-          sum + Math.max(0, ...scene.options.map((o) => o.points ?? 0)),
-        0,
-      )
-      const computedMaxScore =
-        10 + // mood
-        10 + // reviewQuiz
-        (sessionContent.quickCheck?.length ?? 0) * 15 + // quickCheck
-        simMax + // simulation
-        10 + // reflection
-        20 // action
+      const computedMaxScore = computeMaxScore(sessionContent, deepDiveContent)
 
       const selectedMoodOption = selectedMood !== null ? sessionContent.moodOptions[selectedMood] : null
       const workAnswers = sessionContent.work?.fields
@@ -147,7 +138,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
       })
       setHasLoggedCompletion(true)
     }
-  }, [currentPhase, hasLoggedCompletion, user, addTrainingLog, training, category, points, elapsedTime])
+  }, [currentPhase, hasLoggedCompletion, user, addTrainingLog, training, category, points, elapsedTime, selectedMood, sessionContent, deepDiveContent, reflectionText, workFields])
 
   const currentPhaseIndex = phaseOrder.indexOf(currentPhase)
   const progress = ((currentPhaseIndex + 1) / phaseOrder.length) * 100
@@ -157,8 +148,6 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
-
-  const deepDiveContent = deepDiveContentProp ?? null
 
   const goToNextPhase = () => {
     const currentIndex = phaseOrder.indexOf(currentPhase)
@@ -273,8 +262,8 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto max-w-2xl px-4 py-3">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="flex items-center justify-between">
             <Link
               href={`/training/${training.id}`}
@@ -298,7 +287,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-4 py-6">
         {/* Phase 1: Checkin */}
         {currentPhase === "checkin" && (
           <Card>
@@ -666,36 +655,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                 <p className="text-sm text-muted-foreground">— {sessionContent.quote.author}</p>
               </div>
               <div className="rounded-lg bg-primary/10 p-4">
-                <p className="text-sm">
-                  💡 断られるたびに、あなたは「うまくいかない方法」を1つ学んでいる。それは前進です。
-                </p>
-              </div>
-              <Button className="w-full" onClick={goToNextPhase}>
-                次へ <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Phase 2: Key Phrase */}
-        {currentPhase === "keyphrase" && (
-          <Card>
-            <CardHeader className="text-center">
-              <Badge variant="outline" className="mx-auto mb-2">
-                今日のキーフレーズ
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="rounded-lg bg-primary/10 border-2 border-primary/30 p-8 text-center">
-                <p className="text-xl font-bold">「{sessionContent.keyPhrase}」</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-4">一緒に声に出してみましょう！</p>
-                <Button variant="outline" className="gap-2 bg-transparent">
-                  <Mic className="h-4 w-4" />
-                  録音開始
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">※声に出すと記憶定着率が2倍になります</p>
+                <p className="text-sm">💡 {sessionContent.quote.textJa}</p>
               </div>
               <Button className="w-full" onClick={goToNextPhase}>
                 次へ <ArrowRight className="ml-2 h-4 w-4" />
@@ -1140,12 +1100,42 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                                 </blockquote>
                               )
                             }
-                            // Handle bold headers
+                            // Handle bold-only lines as subheadings
                             if (paragraph.startsWith("**") && paragraph.endsWith("**")) {
                               return (
                                 <h4 key={pIndex} className="font-bold mt-4 mb-2">
                                   {paragraph.replace(/\*\*/g, "")}
                                 </h4>
+                              )
+                            }
+                            // Handle tables
+                            if (paragraph.includes("|") && paragraph.includes("---")) {
+                              const lines = paragraph.split("\n").filter((line) => line.trim())
+                              const headers = lines[0]?.split("|").filter((cell) => cell.trim()).map((cell) => cell.trim())
+                              const rows = lines.slice(2).map((line) =>
+                                line.split("|").filter((cell) => cell.trim()).map((cell) => cell.trim())
+                              )
+                              return (
+                                <div key={pIndex} className="my-4 overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-border bg-secondary/50">
+                                        {headers?.map((header, i) => (
+                                          <th key={i} className="px-3 py-2 text-left font-medium">{header}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rows.map((row, rowIndex) => (
+                                        <tr key={rowIndex} className={`border-b border-border ${rowIndex % 2 === 1 ? "bg-secondary/30" : ""}`}>
+                                          {row.map((cell, cellIndex) => (
+                                            <td key={cellIndex} className="px-3 py-2 text-muted-foreground">{cell}</td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               )
                             }
                             // Handle lists
@@ -1164,7 +1154,7 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                                 </div>
                               )
                             }
-                            // Regular paragraphs
+                            // Regular paragraphs with inline bold
                             return (
                               <p key={pIndex} className="text-sm leading-relaxed my-2">
                                 {paragraph
@@ -1188,7 +1178,47 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
                   <Bookmark className="h-4 w-4" />
                   おわりに
                 </h4>
-                <p className="text-sm leading-relaxed whitespace-pre-line">{deepDiveContent.conclusion}</p>
+                <div className="text-sm leading-relaxed">
+                  {deepDiveContent.conclusion.split("\n\n").map((block, bi) => {
+                    if (block.startsWith("**") && block.endsWith("**")) {
+                      return <p key={bi} className="font-bold mt-3 mb-1">{block.replace(/\*\*/g, "")}</p>
+                    }
+                    if (block.startsWith(">")) {
+                      return (
+                        <blockquote key={bi} className="border-l-4 border-primary/50 pl-3 my-3 italic text-muted-foreground">
+                          {block.split("\n").map((line, li) => (
+                            <p key={li} className="mb-0.5 last:mb-0">{line.replace(/^>\s*/, "")}</p>
+                          ))}
+                        </blockquote>
+                      )
+                    }
+                    if (block.match(/^[-•]\s/m) || block.match(/^\d+\.\s/m)) {
+                      const items = block.split("\n").filter(l => l.trim())
+                      return (
+                        <ul key={bi} className="my-2 space-y-1">
+                          {items.map((item, ii) => {
+                            const text = item.replace(/^[-•]\s*/, "").replace(/^\d+\.\s*/, "")
+                            return (
+                              <li key={ii} className="flex items-start gap-1.5">
+                                <span className="mt-1.5 h-1 w-1 rounded-full bg-primary/50 shrink-0" />
+                                <span>{text.split("**").map((part, pi) =>
+                                  pi % 2 === 1 ? <strong key={pi}>{part}</strong> : part
+                                )}</span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )
+                    }
+                    return (
+                      <p key={bi} className="my-2">
+                        {block.split("**").map((part, pi) =>
+                          pi % 2 === 1 ? <strong key={pi}>{part}</strong> : part
+                        )}
+                      </p>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* References */}

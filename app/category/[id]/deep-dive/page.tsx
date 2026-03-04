@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, BookOpen } from "lucide-react"
-import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { getCategoryByIdFromDb, getCategoryDeepDiveFromDb } from "@/lib/db/categories"
 import { createClient } from "@/lib/supabase/server"
@@ -24,7 +23,6 @@ export default async function CategoryDeepDivePage({ params }: PageProps) {
   if (categoryDeepDive) {
     return (
       <div className="flex min-h-screen flex-col">
-        <Header />
         <main className="flex-1" dangerouslySetInnerHTML={{ __html: categoryDeepDive.bodyHtml }} />
         <Footer />
       </div>
@@ -45,7 +43,7 @@ export default async function CategoryDeepDivePage({ params }: PageProps) {
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         <section className="border-b border-border bg-linear-to-b from-amber-50 to-background py-12">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <Link
               href={`/category/${category.id}`}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -69,7 +67,7 @@ export default async function CategoryDeepDivePage({ params }: PageProps) {
         </section>
 
         <section className="py-12">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <ul className="space-y-3">
               {trainingsWithDeepDive.map((training) => (
                 <li key={training.id}>

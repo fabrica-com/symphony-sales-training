@@ -5,7 +5,6 @@ import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
-import Header from "@/components/header" // Import Header component
 
 interface DeepDivePageProps {
   params: Promise<{ id: string }>
@@ -31,7 +30,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="border-b border-border bg-linear-to-b from-blue-50 to-background py-12">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <Link
               href={`/training/${training.id}`}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -55,7 +54,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
 
         {/* Table of Contents */}
         <section className="border-b border-border bg-secondary/30 py-8">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <h2 className="mb-4 text-lg font-semibold">目次</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {deepDiveContent.sections.map((section, index) => (
@@ -76,7 +75,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
 
         {/* Content */}
         <article className="py-12">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             {/* Introduction */}
             <div className="mb-12 rounded-lg border border-border bg-secondary/30 p-6">
               <h2 className="mb-4 text-xl font-semibold">はじめに</h2>
@@ -101,7 +100,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
                   <CardContent className="pt-6">
                     <div className="prose prose-sm max-w-none">
                       {section.content.split('\n\n').map((block, blockIndex) => {
-                        // Handle headers
+                        // Handle bold-only lines as subheadings
                         if (block.startsWith('**') && block.endsWith('**')) {
                           return (
                             <h3 key={blockIndex} className="mt-6 mb-3 text-lg font-semibold text-blue-600 first:mt-0">
@@ -109,7 +108,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
                             </h3>
                           )
                         }
-                        
+
                         // Handle blockquotes
                         if (block.startsWith('>')) {
                           return (
@@ -174,7 +173,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
                           )
                         }
                         
-                        // Regular paragraph
+                        // Regular paragraph with inline bold
                         return (
                           <p key={blockIndex} className="mb-4 leading-relaxed text-muted-foreground last:mb-0">
                             {block.split(/(\*\*[^*]+\*\*)/).map((part, partIndex) => {
@@ -201,16 +200,65 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
                     まとめ
                   </h2>
                   <div className="prose prose-sm max-w-none">
-                    {deepDiveContent.conclusion.split('\n\n').map((paragraph, index) => (
-                      <p key={index} className="mb-4 leading-relaxed text-muted-foreground last:mb-0">
-                        {paragraph.split(/(\*\*[^*]+\*\*)/).map((part, partIndex) => {
-                          if (part.startsWith('**') && part.endsWith('**')) {
-                            return <strong key={partIndex} className="font-semibold text-foreground">{part.replace(/\*\*/g, '')}</strong>
-                          }
-                          return part
-                        })}
-                      </p>
-                    ))}
+                    {deepDiveContent.conclusion.split('\n\n').map((block, blockIndex) => {
+                      // Bold-only lines as subheadings
+                      if (block.startsWith('**') && block.endsWith('**')) {
+                        return (
+                          <h3 key={blockIndex} className="mt-6 mb-3 text-lg font-semibold text-blue-600 first:mt-0">
+                            {block.replace(/\*\*/g, '')}
+                          </h3>
+                        )
+                      }
+                      // Blockquotes
+                      if (block.startsWith('>')) {
+                        return (
+                          <div key={blockIndex} className="my-4 rounded-lg bg-blue-100/50 border-l-4 border-blue-500 p-4">
+                            <div className="text-sm leading-relaxed text-blue-800">
+                              {block.split('\n').map((line, lineIndex) => (
+                                <p key={lineIndex} className="mb-1 last:mb-0">
+                                  {line.replace(/^>\s*/, '').replace(/\*\*/g, '')}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      }
+                      // Lists (numbered or bulleted)
+                      if (block.match(/^[-•]\s/m) || block.match(/^\d+\.\s/m)) {
+                        const items = block.split('\n').filter(line => line.trim())
+                        return (
+                          <ul key={blockIndex} className="my-4 space-y-2">
+                            {items.map((item, itemIndex) => {
+                              const text = item.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '')
+                              return (
+                                <li key={itemIndex} className="flex items-start gap-2">
+                                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+                                  <span className="text-muted-foreground">
+                                    {text.split(/(\*\*[^*]+\*\*)/).map((part, pi) => {
+                                      if (part.startsWith('**') && part.endsWith('**')) {
+                                        return <strong key={pi} className="font-semibold text-foreground">{part.replace(/\*\*/g, '')}</strong>
+                                      }
+                                      return part
+                                    })}
+                                  </span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        )
+                      }
+                      // Regular paragraph with inline bold
+                      return (
+                        <p key={blockIndex} className="mb-4 leading-relaxed text-muted-foreground last:mb-0">
+                          {block.split(/(\*\*[^*]+\*\*)/).map((part, partIndex) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                              return <strong key={partIndex} className="font-semibold text-foreground">{part.replace(/\*\*/g, '')}</strong>
+                            }
+                            return part
+                          })}
+                        </p>
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>

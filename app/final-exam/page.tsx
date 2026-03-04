@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, AlertCircle, Trophy, RotateCcw, GraduationCap } from "lucide-react"
 import { Footer } from "@/components/footer"
@@ -11,16 +10,28 @@ import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
-import { getFinalExamAction, saveFinalExamResultAction } from "@/app/actions/final-exam-actions"
+import { getFinalExamAction, submitAndGradeFinalExamAction } from "@/app/actions/final-exam-actions"
+import { getAllCategoryNamesAction } from "@/app/actions/category-actions"
 
+// テスト中の問題（correctAnswer/explanationはサーバー側のみ）
 export interface FinalExamQuestion {
   id: number
   question: string
   options: string[]
-  correctAnswer: number
-  explanation: string
   source: string
   difficulty: "basic" | "intermediate" | "advanced"
+}
+
+// 採点後にサーバーから返される問題（正解・解説付き）
+export interface GradedQuestion {
+  id: number
+  question: string
+  options: string[]
+  source: string
+  correctAnswer: number
+  explanation: string
+  userAnswer: number
+  isCorrect: boolean
 }
 
 export interface FinalExam {
@@ -33,10 +44,10 @@ export interface FinalExam {
 type TestPhase = "intro" | "test" | "result"
 
 export default function FinalExamPage() {
-  const router = useRouter()
   const { user } = useAuth()
 
   const [exam, setExam] = useState<FinalExam | null>(null)
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
   const [phase, setPhase] = useState<TestPhase>("intro")
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<number[]>([])
@@ -49,18 +60,24 @@ export default function FinalExamPage() {
     correctCount: number
     incorrectCount: number
   } | null>(null)
+  const [gradedQuestions, setGradedQuestions] = useState<GradedQuestion[]>([])
   const [showExplanation, setShowExplanation] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const examData = await getFinalExamAction()
+        const [examData, categoryNames] = await Promise.all([
+          getFinalExamAction(),
+          getAllCategoryNamesAction(),
+        ])
         if (examData) {
           setExam(examData)
           setTimeRemaining(examData.timeLimit * 60)
           setAnswers(new Array(examData.questions.length).fill(-1))
         }
+        setCategories(categoryNames)
       } catch (error) {
         console.error("Failed to fetch exam:", error)
       } finally {
@@ -70,42 +87,35 @@ export default function FinalExamPage() {
     fetchData()
   }, [])
 
-  const calculateScore = useCallback((answers: number[], exam: FinalExam) => {
-    let correctCount = 0
-    for (let i = 0; i < exam.questions.length; i++) {
-      if (answers[i] === exam.questions[i].correctAnswer) {
-        correctCount++
-      }
-    }
-    const percentage = Math.round((correctCount / exam.totalQuestions) * 100)
-    return {
-      score: correctCount,
-      percentage,
-      passed: percentage >= exam.passingScore,
-      correctCount,
-      incorrectCount: exam.totalQuestions - correctCount,
-    }
-  }, [])
-
   const handleSubmitTest = useCallback(async () => {
-    if (!exam) return
-    
-    const result = calculateScore(answers, exam)
-    setTestResult(result)
-    setPhase("result")
+    if (!exam || submitting) return
+    setSubmitting(true)
 
-    // Save test result if user is logged in（DB保存はサーバー再採点）
-    if (user) {
-      try {
-        await saveFinalExamResultAction({
-          answers,
-          duration: (exam.timeLimit * 60) - timeRemaining,
+    try {
+      const result = await submitAndGradeFinalExamAction({
+        answers,
+        duration: (exam.timeLimit * 60) - timeRemaining,
+      })
+
+      if (result.success) {
+        setTestResult({
+          score: result.score,
+          percentage: result.percentage,
+          passed: result.passed,
+          correctCount: result.score,
+          incorrectCount: result.totalQuestions - result.score,
         })
-      } catch (error) {
-        console.error("Failed to save result:", error)
+        setGradedQuestions(result.questions)
+        setPhase("result")
+      } else {
+        console.error("Failed to grade exam:", result.error)
       }
+    } catch (error) {
+      console.error("Failed to submit exam:", error)
+    } finally {
+      setSubmitting(false)
     }
-  }, [exam, answers, user, timeRemaining, calculateScore])
+  }, [exam, answers, timeRemaining, submitting])
 
   // Timer - moved after handleSubmitTest to avoid reference error
   useEffect(() => {
@@ -171,6 +181,7 @@ export default function FinalExamPage() {
     setSelectedAnswer(null)
     setTimeRemaining(exam.timeLimit * 60)
     setTestResult(null)
+    setGradedQuestions([])
     setShowExplanation(false)
   }
 
@@ -204,7 +215,7 @@ export default function FinalExamPage() {
       <main className="flex-1 bg-secondary/30">
         {/* Intro Phase */}
         {phase === "intro" && (
-          <div className="mx-auto max-w-3xl px-4 py-12">
+          <div className="mx-auto max-w-7xl px-4 py-12">
             <Link
               href="/"
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -263,12 +274,9 @@ export default function FinalExamPage() {
                     <div>
                       <p className="font-medium text-blue-900">出題範囲</p>
                       <ul className="mt-2 text-sm text-blue-800 space-y-1">
-                        <li>- A: 基礎マインドセット</li>
-                        <li>- B: 商品知識（Symphonyシリーズ）</li>
-                        <li>- C: 営業プロセス</li>
-                        <li>- D: 商談テクニック</li>
-                        <li>- E: 顧客管理・フォロー</li>
-                        <li>- F: セルフマネジメント</li>
+                        {categories.map((cat) => (
+                          <li key={cat.id}>- {cat.id}: {cat.name}</li>
+                        ))}
                         <li>- 各カテゴリの深掘り読み物</li>
                       </ul>
                     </div>
@@ -302,7 +310,7 @@ export default function FinalExamPage() {
 
         {/* Test Phase */}
         {phase === "test" && (
-          <div className="mx-auto max-w-4xl px-4 py-6">
+          <div className="mx-auto max-w-7xl px-4 py-6">
             {/* Header with timer and progress */}
             <div className="sticky top-16 z-40 bg-secondary/95 backdrop-blur -mx-4 px-4 py-4 mb-6 border-b">
               <div className="flex items-center justify-between mb-3">
@@ -390,9 +398,10 @@ export default function FinalExamPage() {
                     }
                     handleSubmitTest()
                   }}
+                  disabled={submitting}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  テストを提出する
+                  {submitting ? "採点中..." : "テストを提出する"}
                 </Button>
               )}
             </div>
@@ -427,7 +436,7 @@ export default function FinalExamPage() {
 
         {/* Result Phase */}
         {phase === "result" && testResult && (
-          <div className="mx-auto max-w-3xl px-4 py-12">
+          <div className="mx-auto max-w-7xl px-4 py-12">
             <Card>
               <CardHeader className={`text-center border-b ${testResult.passed ? "bg-linear-to-r from-green-50 to-emerald-50" : "bg-linear-to-r from-red-50 to-orange-50"}`}>
                 <div className={`mx-auto flex h-24 w-24 items-center justify-center rounded-full ${
@@ -479,17 +488,15 @@ export default function FinalExamPage() {
                 {/* Explanations */}
                 {showExplanation && (
                   <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {exam.questions.map((question, index) => {
-                      const isCorrect = answers[index] === question.correctAnswer
-                      return (
+                    {gradedQuestions.map((question, index) => (
                         <div
                           key={question.id}
                           className={`rounded-lg border p-4 ${
-                            isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
+                            question.isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
                           }`}
                         >
                           <div className="flex items-start gap-2 mb-2">
-                            {isCorrect ? (
+                            {question.isCorrect ? (
                               <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
                             ) : (
                               <XCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
@@ -499,10 +506,10 @@ export default function FinalExamPage() {
                               <p className="text-xs text-muted-foreground mt-1">出典: {question.source}</p>
                             </div>
                           </div>
-                          {!isCorrect && (
+                          {!question.isCorrect && (
                             <div className="ml-7 mt-2 text-sm">
                               <p className="text-red-700">
-                                あなたの回答: {answers[index] >= 0 ? question.options[answers[index]] : "未回答"}
+                                あなたの回答: {question.userAnswer >= 0 ? question.options[question.userAnswer] : "未回答"}
                               </p>
                               <p className="text-green-700 font-medium">
                                 正解: {question.options[question.correctAnswer]}
@@ -513,8 +520,7 @@ export default function FinalExamPage() {
                             {question.explanation}
                           </p>
                         </div>
-                      )
-                    })}
+                    ))}
                   </div>
                 )}
 

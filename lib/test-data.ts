@@ -1,6 +1,7 @@
 // カテゴリテスト型定義
 
-export interface TestQuestion {
+/** サーバーのみが持つ完全な問題（correctAnswer, explanation 含む） */
+export interface TestQuestionFull {
   id: number
   question: string
   options: string[]
@@ -9,6 +10,15 @@ export interface TestQuestion {
   source: string
 }
 
+/** クライアントに送る問題（正解・解説なし） */
+export interface TestQuestion {
+  id: number
+  question: string
+  options: string[]
+  source: string
+}
+
+/** クライアントに送るテスト（正解なし） */
 export interface CategoryTest {
   categoryId: string
   categoryName: string
@@ -18,29 +28,23 @@ export interface CategoryTest {
   questions: TestQuestion[]
 }
 
-// Calculate test score
-export function calculateTestScore(answers: number[], test: CategoryTest): {
+/** サーバー採点後に返す各問題の結果 */
+export interface QuestionResult {
+  question: string
+  options: string[]
+  source: string
+  userAnswer: number
+  correctAnswer: number
+  isCorrect: boolean
+  explanation: string
+}
+
+/** サーバー採点後に返すテスト結果 */
+export interface TestGradingResult {
   score: number
   percentage: number
   passed: boolean
   correctCount: number
   incorrectCount: number
-} {
-  let correctCount = 0
-  
-  for (let i = 0; i < test.questions.length; i++) {
-    if (answers[i] === test.questions[i].correctAnswer) {
-      correctCount++
-    }
-  }
-  
-  const percentage = Math.round((correctCount / test.totalQuestions) * 100)
-  
-  return {
-    score: correctCount * 2,
-    percentage,
-    passed: percentage >= test.passingScore,
-    correctCount,
-    incorrectCount: test.totalQuestions - correctCount,
-  }
+  questionResults: QuestionResult[]
 }

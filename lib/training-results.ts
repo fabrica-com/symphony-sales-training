@@ -1,28 +1,25 @@
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUserId } from "@/lib/auth-server"
+import type { TrainingResult } from "@/lib/training-results-types"
 export type { TrainingResult } from "@/lib/training-results-types"
 
 // データベースから研修結果を取得
 // training_sessionsテーブルから特定のトレーニングIDのセッションを取得
 export async function getTrainingResultsFromDb(trainingId: number): Promise<TrainingResult[]> {
   try {
-    const client = await createClient()
-
-    // current user
-    const {
-      data: { user },
-    } = await client.auth.getUser()
-
-    if (!user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return []
     }
 
+    const client = await createClient()
 
     // training_sessionsテーブルからデータを取得
     const { data, error } = await client
       .from("training_sessions")
       .select("*")
       .eq("training_id", trainingId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("attempt_number", { ascending: true })
 
     if (error) {
@@ -32,7 +29,24 @@ export async function getTrainingResultsFromDb(trainingId: number): Promise<Trai
 
 
     // training_sessionsのフォーマットからTrainingResultに変換
-    const results: TrainingResult[] = (data || []).map((session: any) => ({
+    interface TrainingSessionRow {
+      id: string
+      training_id: number
+      training_title: string
+      category_id: string
+      category_name: string
+      attempt_number: number
+      overall_score: number
+      max_score: number
+      duration_seconds: number
+      feedback?: string
+      strengths?: string[]
+      improvements?: string[]
+      evaluation?: { category: string; score: number; comment: string }[]
+      completed_at: string
+    }
+
+    const results: TrainingResult[] = (data || []).map((session: TrainingSessionRow) => ({
       id: session.id,
       trainingId: session.training_id,
       trainingTitle: session.training_title,

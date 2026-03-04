@@ -34,6 +34,8 @@ export interface Category {
   targetLevel: string
   trainings: Training[]
   color: string
+  /** DB から取得した研修数（trainings 配列が空の場合に使用） */
+  trainingCount?: number
   /** 総合テストが存在する場合 true（DB の category_tests で判定） */
   hasTest?: boolean
   /** このカテゴリに Deep Dive コンテンツがある場合 true（DB の deep_dive_contents で判定） */
