@@ -1,7 +1,17 @@
-import type { DeepDiveReading, DeepDiveSection } from "../deep-dive-content"
+// Deep Dive 型定義（DB の deep_dive_contents と対応）
+export interface DeepDiveSection {
+  title: string
+  content: string
+}
 
-// 研修セッション用のデータ型定義
-export type { DeepDiveReading, DeepDiveSection }
+export interface DeepDiveReading {
+  title: string
+  subtitle: string
+  introduction: string
+  sections: DeepDiveSection[]
+  conclusion: string
+  references?: string[]
+}
 
 export interface MoodOption {
   emoji: string

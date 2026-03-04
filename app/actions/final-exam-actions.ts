@@ -1,57 +1,131 @@
 "use server"
 
-import { finalExamData } from "@/lib/final-exam-data"
-import { createClient } from "@/lib/supabase/server"
+import { getFinalExamFromDb } from "@/lib/db/categories"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { getCurrentUserId } from "@/lib/auth-server"
+import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
+import { log } from "@/lib/logger"
 
-export interface FinalExamResult {
-  userId: string
-  completedAt: string
-  score: number
-  percentage: number
-  passed: boolean
-  correctCount: number
-  totalQuestions: number
+export interface FinalExamResultPayload {
+  answers: number[]
   duration: number
 }
 
-// 修了テストデータを取得
+// 修了テストデータを取得（correctAnswer / explanation はクライアントに送らない）
 export async function getFinalExamAction() {
-  return finalExamData
-}
+  const full = await getFinalExamFromDb()
+  if (!full) return null
 
-// 修了テスト結果を保存
-export async function saveFinalExamResultAction(result: FinalExamResult) {
-  try {
-    const supabase = await createClient()
-    
-    const { error } = await supabase.from("final_exam_results").insert({
-      user_id: result.userId,
-      completed_at: result.completedAt,
-      score: result.score,
-      percentage: result.percentage,
-      passed: result.passed,
-      correct_count: result.correctCount,
-      total_questions: result.totalQuestions,
-      duration: result.duration,
-    })
-
-    if (error) {
-      console.error("Failed to save final exam result:", error)
-      return { success: false, error: error.message }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error("Error saving final exam result:", error)
-    return { success: false, error: "Failed to save result" }
+  return {
+    totalQuestions: full.totalQuestions,
+    passingScore: full.passingScore,
+    timeLimit: full.timeLimit,
+    questions: full.questions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      source: q.source,
+      difficulty: q.difficulty,
+    })),
   }
 }
 
-// ユーザーの修了テスト結果を取得
-export async function getFinalExamResultsAction(userId: string) {
+// サーバー側で採点し、結果と解説を返す
+export async function submitAndGradeFinalExamAction(payload: FinalExamResultPayload) {
   try {
-    const supabase = await createClient()
-    
+    const userId = await getCurrentUserId()
+
+    const supabase = await createAdminClient()
+
+    const [{ data: config }, { data: questions }] = await Promise.all([
+      supabase.from("final_exam_config").select("passing_score, total_questions, time_limit").eq("id", 1).single(),
+      supabase.from("final_exam_questions").select("question_number, correct_answer, explanation, question, options, source").order("question_number"),
+    ])
+
+    if (!config || !questions) {
+      return { success: false as const, error: "Exam data not found" }
+    }
+
+    let correctCount = 0
+    const graded = questions.map((q, i) => {
+      const isCorrect = payload.answers[i] === q.correct_answer
+      if (isCorrect) correctCount++
+      return {
+        id: q.question_number,
+        question: q.question,
+        options: q.options as string[],
+        source: q.source,
+        correctAnswer: q.correct_answer,
+        explanation: q.explanation,
+        userAnswer: payload.answers[i] ?? -1,
+        isCorrect,
+      }
+    })
+
+    const percentage = Math.round((correctCount / config.total_questions) * 100)
+    const passed = percentage >= config.passing_score
+
+    // ログイン済みなら結果を保存
+    if (userId) {
+      const { error } = await supabase.from("final_exam_results").insert({
+        user_id: userId,
+        completed_at: new Date().toISOString(),
+        score: correctCount,
+        percentage,
+        passed,
+        correct_count: correctCount,
+        total_questions: config.total_questions,
+        duration: payload.duration,
+      })
+
+      if (error) {
+        log.error("SAVE_FINAL_EXAM_DB_ERROR", {
+          userId,
+          table: "final_exam_results",
+          message: error.message,
+          code: error.code,
+        })
+      } else {
+        log.info("SAVE_FINAL_EXAM_SUCCESS", { userId, correctCount, total: config.total_questions, percentage, passed })
+
+        const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single()
+        await notifyChatworkTaskCompleted({
+          kind: "final_exam",
+          userId,
+          percentage,
+          passed,
+          score: correctCount,
+          totalQuestions: config.total_questions,
+          userName: profile?.name ?? undefined,
+        }).catch((e) => log.error("CHATWORK_NOTIFY_ERROR", { userId, event: "final_exam", message: String(e) }))
+      }
+    }
+
+    return {
+      success: true as const,
+      score: correctCount,
+      percentage,
+      passed,
+      totalQuestions: config.total_questions,
+      questions: graded,
+    }
+  } catch (error) {
+    log.error("SUBMIT_FINAL_EXAM_EXCEPTION", { message: String(error) })
+    return { success: false as const, error: "Failed to grade exam" }
+  }
+}
+
+// 現在ユーザーの修了テスト結果を取得
+export async function getFinalExamResultsAction() {
+  try {
+    const userId = await getCurrentUserId()
+    if (!userId) {
+      log.info("GET_FINAL_EXAM_RESULTS_NO_SESSION")
+      return []
+    }
+
+    const supabase = await createAdminClient()
+
     const { data, error } = await supabase
       .from("final_exam_results")
       .select("*")
@@ -59,22 +133,29 @@ export async function getFinalExamResultsAction(userId: string) {
       .order("completed_at", { ascending: false })
 
     if (error) {
-      console.error("Failed to fetch final exam results:", error)
+      log.error("GET_FINAL_EXAM_RESULTS_ERROR", {
+        userId,
+        message: error.message,
+        code: error.code,
+      })
       return []
     }
 
     return data
   } catch (error) {
-    console.error("Error fetching final exam results:", error)
+    log.error("GET_FINAL_EXAM_RESULTS_EXCEPTION", { message: String(error) })
     return []
   }
 }
 
-// ユーザーが修了テストに合格しているかチェック
-export async function checkFinalExamPassedAction(userId: string) {
+// 現在ユーザーが修了テストに合格しているかチェック
+export async function checkFinalExamPassedAction() {
   try {
-    const supabase = await createClient()
-    
+    const userId = await getCurrentUserId()
+    if (!userId) return false
+
+    const supabase = await createAdminClient()
+
     const { data, error } = await supabase
       .from("final_exam_results")
       .select("passed")
@@ -83,13 +164,17 @@ export async function checkFinalExamPassedAction(userId: string) {
       .limit(1)
 
     if (error) {
-      console.error("Failed to check final exam passed:", error)
+      log.error("CHECK_FINAL_EXAM_PASSED_ERROR", {
+        userId,
+        message: error.message,
+        code: error.code,
+      })
       return false
     }
 
-    return data && data.length > 0
+    return data != null && data.length > 0
   } catch (error) {
-    console.error("Error checking final exam passed:", error)
+    log.error("CHECK_FINAL_EXAM_PASSED_EXCEPTION", { message: String(error) })
     return false
   }
 }
