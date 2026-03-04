@@ -23,9 +23,8 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "Symphony研修プログラム | ファブリカホールディングス",
+  title: "symphony研修プログラム | 株式会社ファブリカコミュニケーションズ",
   description: "新卒からマネージャーまで、体系的に学べる営業力強化プログラム。全100本のミニ研修で即戦力を育成。",
-    generator: 'v0.app'
 }
 
 export default function RootLayout({

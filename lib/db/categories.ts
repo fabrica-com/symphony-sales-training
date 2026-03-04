@@ -1,21 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
 import type { Category } from "@/lib/training-data"
-import type { DbCategory } from "@/lib/db/types"
-import { getDeepDiveContent } from "@/lib/deep-dive-content"
-
-// DBのカテゴリをフロントエンドの型に変換（同期関数、クライアントからは呼び出さない）
-function mapDbCategoryToCategory(dbCategory: DbCategory, trainings: Category["trainings"] = []): Category {
-  return {
-    id: dbCategory.id,
-    name: dbCategory.name,
-    description: dbCategory.description,
-    totalDuration: dbCategory.total_duration,
-    targetLevel: dbCategory.target_level,
-    color: dbCategory.color,
-    trainings,
-  }
-}
 
 // 全カテゴリを取得（トレーニング数を含む）
 export async function getAllCategories(): Promise<Category[]> {
@@ -49,7 +33,7 @@ export async function getAllCategories(): Promise<Category[]> {
     })
   }
 
-  // カテゴリを変換（trainingsは空配列、代わりにtraining_countを使用）
+  // カテゴリを変換
   return categories.map((cat) => ({
     id: cat.id,
     name: cat.name,
@@ -57,7 +41,8 @@ export async function getAllCategories(): Promise<Category[]> {
     totalDuration: cat.total_duration,
     targetLevel: cat.target_level,
     color: cat.color,
-    trainings: Array(countMap[cat.id] || 0).fill({}), // カード表示用にダミー配列
+    trainingCount: countMap[cat.id] || 0,
+    trainings: [],
   }))
 }
 
@@ -87,6 +72,31 @@ export async function getCategoryByIdFromDb(id: string): Promise<Category | null
     console.error("Error fetching trainings:", trainingsError)
   }
 
+  const trainingIds = (trainings ?? []).map((t) => t.id)
+  let hasDeepDive = false
+
+  if (trainingIds.length > 0) {
+    // 並列実行: トレーニング単位とカテゴリ単位の深掘りを同時にチェック
+    const [deepDiveResult, categoryDeepDiveResult] = await Promise.all([
+      supabase
+        .from("deep_dive_contents")
+        .select("*", { count: "exact", head: true })
+        .in("training_id", trainingIds),
+      supabase
+        .from("category_deep_dive_contents")
+        .select("*", { count: "exact", head: true })
+        .eq("category_id", id),
+    ])
+    hasDeepDive = (deepDiveResult.count ?? 0) > 0 || (categoryDeepDiveResult.count ?? 0) > 0
+  } else {
+    // トレーニングがない場合はカテゴリ単位のみチェック
+    const { count: categoryCount } = await supabase
+      .from("category_deep_dive_contents")
+      .select("*", { count: "exact", head: true })
+      .eq("category_id", id)
+    hasDeepDive = (categoryCount ?? 0) > 0
+  }
+
   return {
     id: category.id,
     name: category.name,
@@ -94,6 +104,7 @@ export async function getCategoryByIdFromDb(id: string): Promise<Category | null
     totalDuration: category.total_duration,
     targetLevel: category.target_level,
     color: category.color,
+    hasDeepDive,
     trainings: trainings?.map((t) => ({
       id: t.id,
       title: t.title,
@@ -214,21 +225,6 @@ export async function getDeepDiveContentFromDb(trainingId: number): Promise<Deep
     .single()
 
   if (error || !data) {
-    // データベースにない場合はローカルコンテンツをフォールバック
-    const localContent = getDeepDiveContent(trainingId)
-    if (localContent) {
-      return {
-        id: trainingId,
-        trainingId: trainingId,
-        title: localContent.title,
-        subtitle: localContent.subtitle,
-        introduction: localContent.introduction,
-        sections: localContent.sections,
-        conclusion: localContent.conclusion,
-        references: localContent.references || null,
-      }
-    }
-    console.error("Error fetching deep dive content:", error)
     return null
   }
 
@@ -292,7 +288,10 @@ export async function getCategoryTestFromDb(categoryId: string): Promise<Categor
     .single()
 
   if (testError || !testData) {
-    console.error("Error fetching category test:", testError)
+    // PGRST116 = "not found" (single row expected but 0 returned) — normal for categories without a test
+    if (testError?.code !== "PGRST116") {
+      console.error("Error fetching category test:", testError)
+    }
     return null
   }
 
@@ -340,4 +339,95 @@ export async function getAllTestCategoryIds(): Promise<{ id: string }[]> {
   }
 
   return data.map((d) => ({ id: d.category_id }))
+}
+
+// カテゴリ単位の深掘りコンテンツ（C の「中古車流通の構造と現状」など）
+export interface CategoryDeepDiveContent {
+  categoryId: string
+  title: string
+  subtitle: string | null
+  bodyHtml: string
+}
+
+export async function getCategoryDeepDiveFromDb(categoryId: string): Promise<CategoryDeepDiveContent | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("category_deep_dive_contents")
+    .select("category_id, title, subtitle, body_html")
+    .eq("category_id", categoryId)
+    .single()
+
+  if (error || !data) return null
+
+  return {
+    categoryId: data.category_id,
+    title: data.title,
+    subtitle: data.subtitle,
+    bodyHtml: data.body_html,
+  }
+}
+
+// 修了テスト型定義
+export interface FinalExamQuestion {
+  id: number
+  question: string
+  options: string[]
+  correctAnswer: number
+  explanation: string
+  source: string
+  difficulty: "basic" | "intermediate" | "advanced"
+}
+
+export interface FinalExam {
+  totalQuestions: number
+  passingScore: number
+  timeLimit: number
+  questions: FinalExamQuestion[]
+}
+
+// 修了テストを取得
+export async function getFinalExamFromDb(): Promise<FinalExam | null> {
+  const supabase = await createClient()
+
+  // 並列実行: config と questions を同時に取得
+  const [configResult, questionsResult] = await Promise.all([
+    supabase
+      .from("final_exam_config")
+      .select("*")
+      .eq("id", 1)
+      .single(),
+    supabase
+      .from("final_exam_questions")
+      .select("*")
+      .order("question_number"),
+  ])
+
+  if (configResult.error || !configResult.data) {
+    console.error("Error fetching final exam config:", configResult.error)
+    return null
+  }
+
+  if (questionsResult.error || !questionsResult.data) {
+    console.error("Error fetching final exam questions:", questionsResult.error)
+    return null
+  }
+
+  const config = configResult.data
+  const questions = questionsResult.data
+
+  return {
+    totalQuestions: config.total_questions,
+    passingScore: config.passing_score,
+    timeLimit: config.time_limit,
+    questions: questions.map((q) => ({
+      id: q.question_number,
+      question: q.question,
+      options: q.options as string[],
+      correctAnswer: q.correct_answer,
+      explanation: q.explanation,
+      source: q.source,
+      difficulty: q.difficulty as "basic" | "intermediate" | "advanced",
+    })),
+  }
 }

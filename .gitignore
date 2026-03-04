@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 
@@ -11,13 +9,11 @@
 /build
 
 # debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+*.log
 
-# env files
+# env files (テンプレートは除外しない)
 .env*
+!.env.local.example
 
 # vercel
 .vercel
@@ -28,6 +24,17 @@ next-env.d.ts
 
 # supabase
 .supabase/
+supabase/functions/.env
 
 # OAuth credentials
 client_secret.json
+
+# Security logs (dev only)
+.logs/
+
+# next-agents-md (自動生成)
+.next-docs/
+
+# Playwright
+/test-results/
+/playwright-report/

@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Construction } from "lucide-react"
-import { getTrainingById } from "@/lib/training-data"
+import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
 import { getSessionContentFromDB } from "@/lib/session-data"
 import { SessionClient } from "./session-client"
-import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+export const dynamic = "force-dynamic"
 
 export default async function SessionPage({
   params,
@@ -17,20 +18,18 @@ export default async function SessionPage({
   const { id } = await params
   const trainingId = Number.parseInt(id)
 
-  const trainingResult = getTrainingById(trainingId)
+  const trainingResult = await getTrainingByIdFromDb(trainingId)
   if (!trainingResult) {
     notFound()
   }
 
   // Supabaseからセッションコンテンツを取得
   const sessionContent = await getSessionContentFromDB(trainingId)
-  console.log("[v0] Session page - trainingId:", trainingId, "sessionContent:", sessionContent ? "found" : "not found")
 
   // セッションコンテンツがない場合は「準備中」ページを表示
   if (!sessionContent) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <Header />
         <main className="flex flex-1 items-center justify-center p-4">
           <Card className="max-w-md w-full text-center">
             <CardHeader>
@@ -67,11 +66,21 @@ export default async function SessionPage({
     )
   }
 
+  const deepDive = await getDeepDiveContentFromDb(trainingId)
+
   return (
     <SessionClient
       training={trainingResult.training}
       category={trainingResult.category}
       sessionContent={sessionContent}
+      deepDiveContent={deepDive ? {
+        title: deepDive.title,
+        subtitle: deepDive.subtitle ?? "",
+        introduction: deepDive.introduction,
+        sections: deepDive.sections,
+        conclusion: deepDive.conclusion,
+        references: deepDive.references ?? undefined,
+      } : null}
     />
   )
 }

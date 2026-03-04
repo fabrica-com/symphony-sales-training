@@ -27,9 +27,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { Training, Category } from "@/lib/training-data"
-import type { SessionContent } from "@/lib/session-data/types"
-import { getDeepDiveContent } from "@/lib/deep-dive-content"
+import type { SessionContent, DeepDiveReading } from "@/lib/session-data/types"
 import { useAuth } from "@/lib/auth-context"
+import { computeMaxScore } from "@/lib/score-calc"
 
 type SessionPhase =
   | "checkin"
@@ -74,9 +74,10 @@ interface SessionClientProps {
   training: Training
   category: Category
   sessionContent: SessionContent
+  deepDiveContent?: DeepDiveReading | null
 }
 
-export function SessionClient({ training, category, sessionContent }: SessionClientProps) {
+export function SessionClient({ training, category, sessionContent, deepDiveContent: deepDiveContentProp }: SessionClientProps) {
   const { user, addTrainingLog } = useAuth()
   const [currentPhase, setCurrentPhase] = useState<SessionPhase>("checkin")
   const [points, setPoints] = useState(0)
@@ -93,7 +94,6 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
   const [showSimulationResult, setShowSimulationResult] = useState(false)
   const [roleplayIndex, setRoleplayIndex] = useState(0)
   const [roleplayDialogueIndex, setRoleplayDialogueIndex] = useState(0)
-  const [roleplayUserInput, setRoleplayUserInput] = useState("")
   const [roleplayComplete, setRoleplayComplete] = useState(false)
   const [reflectionText, setReflectionText] = useState("")
   const [selectedAction, setSelectedAction] = useState<string | null>(null)
@@ -102,6 +102,8 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
 
   const [expandedSections, setExpandedSections] = useState<number[]>([])
   const [deepDiveRead, setDeepDiveRead] = useState(false)
+
+  const deepDiveContent = deepDiveContentProp ?? null
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -113,6 +115,13 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
   // Log training completion when reaching ending phase
   useEffect(() => {
     if (currentPhase === "ending" && !hasLoggedCompletion && user) {
+      const computedMaxScore = computeMaxScore(sessionContent, deepDiveContent)
+
+      const selectedMoodOption = selectedMood !== null ? sessionContent.moodOptions[selectedMood] : null
+      const workAnswers = sessionContent.work?.fields
+        .map((field, i) => ({ label: field.label, value: workFields[i] ?? "" }))
+        .filter((a) => a.value.trim().length > 0)
+
       addTrainingLog({
         odaiNumber: training.id,
         trainingTitle: training.title,
@@ -120,12 +129,16 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         categoryName: category.name,
         completedAt: new Date().toISOString(),
         score: points,
-        maxScore: 200, // Maximum possible points
+        maxScore: computedMaxScore,
         duration: elapsedTime,
+        moodEmoji: selectedMoodOption?.emoji,
+        moodLabel: selectedMoodOption?.label,
+        reflectionText: reflectionText || undefined,
+        workAnswers: workAnswers && workAnswers.length > 0 ? workAnswers : undefined,
       })
       setHasLoggedCompletion(true)
     }
-  }, [currentPhase, hasLoggedCompletion, user, addTrainingLog, training, category, points, elapsedTime])
+  }, [currentPhase, hasLoggedCompletion, user, addTrainingLog, training, category, points, elapsedTime, selectedMood, sessionContent, deepDiveContent, reflectionText, workFields])
 
   const currentPhaseIndex = phaseOrder.indexOf(currentPhase)
   const progress = ((currentPhaseIndex + 1) / phaseOrder.length) * 100
@@ -135,8 +148,6 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
-
-  const deepDiveContent = getDeepDiveContent(training.id)
 
   const goToNextPhase = () => {
     const currentIndex = phaseOrder.indexOf(currentPhase)
@@ -251,8 +262,8 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto max-w-2xl px-4 py-3">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="flex items-center justify-between">
             <Link
               href={`/training/${training.id}`}
@@ -276,7 +287,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-4 py-6">
         {/* Phase 1: Checkin */}
         {currentPhase === "checkin" && (
           <Card>
@@ -343,7 +354,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                     <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
                     <span className="flex-1">{option}</span>
                     {showReviewResult && index === sessionContent.reviewQuiz.correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 flex-shrink-0" />
+                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                     )}
                   </Button>
                 ))}
@@ -489,7 +500,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
               </div>
               {sessionContent.infographic.audioText && (
                 <div className="flex items-start gap-3 rounded-lg bg-secondary/30 p-4">
-                  <Volume2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <Volume2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <p className="text-sm">{sessionContent.infographic.audioText}</p>
                 </div>
               )}
@@ -535,7 +546,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                     <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
                     <span className="flex-1">{option}</span>
                     {showQuickCheckResult && index === sessionContent.quickCheck[quickCheckIndex].correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 flex-shrink-0" />
+                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                     )}
                   </Button>
                 ))}
@@ -644,36 +655,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                 <p className="text-sm text-muted-foreground">— {sessionContent.quote.author}</p>
               </div>
               <div className="rounded-lg bg-primary/10 p-4">
-                <p className="text-sm">
-                  💡 断られるたびに、あなたは「うまくいかない方法」を1つ学んでいる。それは前進です。
-                </p>
-              </div>
-              <Button className="w-full" onClick={goToNextPhase}>
-                次へ <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Phase 2: Key Phrase */}
-        {currentPhase === "keyphrase" && (
-          <Card>
-            <CardHeader className="text-center">
-              <Badge variant="outline" className="mx-auto mb-2">
-                今日のキーフレーズ
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="rounded-lg bg-primary/10 border-2 border-primary/30 p-8 text-center">
-                <p className="text-xl font-bold">「{sessionContent.keyPhrase}」</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-4">一緒に声に出してみましょう！</p>
-                <Button variant="outline" className="gap-2 bg-transparent">
-                  <Mic className="h-4 w-4" />
-                  録音開始
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">※声に出すと記憶定着率が2倍になります</p>
+                <p className="text-sm">💡 {sessionContent.quote.textJa}</p>
               </div>
               <Button className="w-full" onClick={goToNextPhase}>
                 次へ <ArrowRight className="ml-2 h-4 w-4" />
@@ -798,7 +780,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                 {/* Senior Opening */}
                 {sessionContent.roleplay[roleplayIndex].seniorOpening && (
                   <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                       <span className="text-xs font-medium">先輩</span>
                     </div>
                     <div className="flex-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
@@ -815,7 +797,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                   return (
                     <div key={idx} className={cn("flex gap-3", isKenta && "flex-row-reverse")}>
                       <div className={cn(
-                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+                        "shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
                         isSenior 
                           ? "bg-blue-100 dark:bg-blue-900/30" 
                           : "bg-green-100 dark:bg-green-900/30"
@@ -853,7 +835,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                       <ul className="space-y-1">
                         {sessionContent.roleplay[roleplayIndex].keyPoints?.map((point, idx) => (
                           <li key={idx} className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
                             {point}
                           </li>
                         ))}
@@ -1094,9 +1076,9 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                     >
                       <span className="font-medium text-sm">{section.title}</span>
                       {expandedSections.includes(index) ? (
-                        <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                       )}
                     </button>
                     {expandedSections.includes(index) && (
@@ -1118,12 +1100,42 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                                 </blockquote>
                               )
                             }
-                            // Handle bold headers
+                            // Handle bold-only lines as subheadings
                             if (paragraph.startsWith("**") && paragraph.endsWith("**")) {
                               return (
                                 <h4 key={pIndex} className="font-bold mt-4 mb-2">
                                   {paragraph.replace(/\*\*/g, "")}
                                 </h4>
+                              )
+                            }
+                            // Handle tables
+                            if (paragraph.includes("|") && paragraph.includes("---")) {
+                              const lines = paragraph.split("\n").filter((line) => line.trim())
+                              const headers = lines[0]?.split("|").filter((cell) => cell.trim()).map((cell) => cell.trim())
+                              const rows = lines.slice(2).map((line) =>
+                                line.split("|").filter((cell) => cell.trim()).map((cell) => cell.trim())
+                              )
+                              return (
+                                <div key={pIndex} className="my-4 overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-border bg-secondary/50">
+                                        {headers?.map((header, i) => (
+                                          <th key={i} className="px-3 py-2 text-left font-medium">{header}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rows.map((row, rowIndex) => (
+                                        <tr key={rowIndex} className={`border-b border-border ${rowIndex % 2 === 1 ? "bg-secondary/30" : ""}`}>
+                                          {row.map((cell, cellIndex) => (
+                                            <td key={cellIndex} className="px-3 py-2 text-muted-foreground">{cell}</td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               )
                             }
                             // Handle lists
@@ -1142,7 +1154,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                                 </div>
                               )
                             }
-                            // Regular paragraphs
+                            // Regular paragraphs with inline bold
                             return (
                               <p key={pIndex} className="text-sm leading-relaxed my-2">
                                 {paragraph
@@ -1166,7 +1178,47 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                   <Bookmark className="h-4 w-4" />
                   おわりに
                 </h4>
-                <p className="text-sm leading-relaxed whitespace-pre-line">{deepDiveContent.conclusion}</p>
+                <div className="text-sm leading-relaxed">
+                  {deepDiveContent.conclusion.split("\n\n").map((block, bi) => {
+                    if (block.startsWith("**") && block.endsWith("**")) {
+                      return <p key={bi} className="font-bold mt-3 mb-1">{block.replace(/\*\*/g, "")}</p>
+                    }
+                    if (block.startsWith(">")) {
+                      return (
+                        <blockquote key={bi} className="border-l-4 border-primary/50 pl-3 my-3 italic text-muted-foreground">
+                          {block.split("\n").map((line, li) => (
+                            <p key={li} className="mb-0.5 last:mb-0">{line.replace(/^>\s*/, "")}</p>
+                          ))}
+                        </blockquote>
+                      )
+                    }
+                    if (block.match(/^[-•]\s/m) || block.match(/^\d+\.\s/m)) {
+                      const items = block.split("\n").filter(l => l.trim())
+                      return (
+                        <ul key={bi} className="my-2 space-y-1">
+                          {items.map((item, ii) => {
+                            const text = item.replace(/^[-•]\s*/, "").replace(/^\d+\.\s*/, "")
+                            return (
+                              <li key={ii} className="flex items-start gap-1.5">
+                                <span className="mt-1.5 h-1 w-1 rounded-full bg-primary/50 shrink-0" />
+                                <span>{text.split("**").map((part, pi) =>
+                                  pi % 2 === 1 ? <strong key={pi}>{part}</strong> : part
+                                )}</span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )
+                    }
+                    return (
+                      <p key={bi} className="my-2">
+                        {block.split("**").map((part, pi) =>
+                          pi % 2 === 1 ? <strong key={pi}>{part}</strong> : part
+                        )}
+                      </p>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* References */}

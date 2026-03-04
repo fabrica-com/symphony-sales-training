@@ -18,7 +18,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
               <span className="text-xl font-bold">{category.id}</span>
             </div>
             <Badge variant="secondary" className="text-xs">
-              {category.trainings.length}本
+              {category.trainingCount ?? category.trainings.length}本
             </Badge>
           </div>
           <h3 className="mt-3 text-lg font-semibold group-hover:text-primary transition-colors">{category.name}</h3>
