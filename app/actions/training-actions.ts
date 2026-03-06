@@ -1,6 +1,6 @@
 "use server"
 
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserId } from "@/lib/auth-server"
 import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
 import { clampScore } from "@/lib/score-calc"
@@ -50,8 +50,8 @@ export async function saveTrainingSession(data: {
       attemptNumber: data.attemptNumber,
     })
 
-    const supabase = await createAdminClient()
-    console.log("[DEBUG] Admin client created successfully")
+    const supabase = await createClient()
+    console.log("[DEBUG] Client created successfully")
 
     const validScore = clampScore(data.score, data.maxScore)
 
@@ -161,7 +161,7 @@ export async function submitAndGradeTestAction(data: {
 }) {
   try {
     const userId = await getCurrentUserId()
-    const supabase = await createAdminClient()
+    const supabase = await createClient()
 
     const { data: testConfig, error: configError } = await supabase
       .from("category_tests")

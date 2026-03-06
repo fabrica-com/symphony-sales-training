@@ -1,7 +1,7 @@
 "use server"
 
 import { getFinalExamFromDb } from "@/lib/db/categories"
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserId } from "@/lib/auth-server"
 import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
 import { log } from "@/lib/logger"
@@ -35,7 +35,7 @@ export async function submitAndGradeFinalExamAction(payload: FinalExamResultPayl
   try {
     const userId = await getCurrentUserId()
 
-    const supabase = await createAdminClient()
+    const supabase = await createClient()
 
     const [{ data: config }, { data: questions }] = await Promise.all([
       supabase.from("final_exam_config").select("passing_score, total_questions, time_limit").eq("id", 1).single(),
@@ -124,7 +124,7 @@ export async function getFinalExamResultsAction() {
       return []
     }
 
-    const supabase = await createAdminClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from("final_exam_results")
@@ -154,7 +154,7 @@ export async function checkFinalExamPassedAction() {
     const userId = await getCurrentUserId()
     if (!userId) return false
 
-    const supabase = await createAdminClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from("final_exam_results")
