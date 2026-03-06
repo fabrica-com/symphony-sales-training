@@ -21,17 +21,7 @@ export async function saveTrainingSession(data: {
   workAnswers?: { label: string; value: string }[]
 }) {
   try {
-    // デバッグ: 環境変数の確認
-    console.log("[DEBUG] Environment check:", {
-      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      supabaseUrlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30),
-    })
-
     const userId = await getCurrentUserId()
-    console.log("[DEBUG] User ID:", userId)
-    
     if (!userId) {
       log.security("UNAUTHORIZED_SAVE_TRAINING_SESSION", {
         action: "saveTrainingSession",
@@ -51,23 +41,8 @@ export async function saveTrainingSession(data: {
     })
 
     const supabase = await createClient()
-    console.log("[DEBUG] Client created successfully")
 
     const validScore = clampScore(data.score, data.maxScore)
-
-    const insertData = {
-      user_id: userId,
-      training_id: data.odaiNumber,
-      category_id: data.categoryId,
-      training_title: data.trainingTitle,
-      attempt_number: data.attemptNumber,
-      duration_seconds: data.duration,
-      overall_score: validScore,
-      max_score: data.maxScore,
-      completed_at: new Date().toISOString(),
-      category_name: data.categoryName,
-    }
-    console.log("[DEBUG] Inserting training session:", insertData)
 
     const { error: sessionError } = await supabase.from("training_sessions").insert({
       user_id: userId,
