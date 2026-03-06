@@ -1,6 +1,6 @@
 "use server"
 
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserId } from "@/lib/auth-server"
 import { log } from "@/lib/logger"
 
@@ -20,7 +20,7 @@ export async function loadUserDataFromServer() {
 
     log.info("LOAD_USER_DATA_START", { userId })
 
-    const supabase = await createAdminClient()
+    const supabase = await createClient()
 
     const [sessionsResult, progressResult, testsResult] = await Promise.all([
       supabase
