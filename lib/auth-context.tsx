@@ -47,7 +47,6 @@ interface ProfileRow {
   name?: string
   department?: string
   join_date?: string
-  role?: "employee" | "manager"
 }
 
 // --- Types ---
@@ -57,7 +56,6 @@ export interface User {
   name: string
   department: string
   joinDate: string
-  role: "employee" | "manager"
 }
 
 export interface TrainingLog {
@@ -232,7 +230,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: profile?.name || session.user.user_metadata?.full_name || session.user.user_metadata?.name || "ユーザー",
         department: profile?.department || "未設定",
         joinDate: profile?.join_date || new Date().toISOString().split("T")[0],
-        role: profile?.role || "employee",
       }
 
       setUser(userData)
