@@ -1,7 +1,7 @@
 "use server"
 
 import { getCategoryByIdFromDb, getCategoryTestFromDb } from "@/lib/db/categories"
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 
 export async function getCategoryByIdAction(categoryId: string) {
   return await getCategoryByIdFromDb(categoryId)
@@ -28,7 +28,7 @@ export async function getCategoryTestAction(categoryId: string) {
 }
 
 export async function getAllCategoriesWithTrainingsAction() {
-  const supabase = await createAdminClient()
+  const supabase = await createClient()
 
   const { data: categories, error } = await supabase
     .from("training_categories")
@@ -70,7 +70,7 @@ export async function getAllCategoriesWithTrainingsAction() {
 
 // カテゴリID・名前のみ取得（軽量版、出題範囲表示用など）
 export async function getAllCategoryNamesAction(): Promise<{ id: string; name: string }[]> {
-  const supabase = await createAdminClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from("training_categories")
