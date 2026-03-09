@@ -114,6 +114,9 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
 
   // Log training completion when reaching ending phase
   useEffect(() => {
+    if (currentPhase === "ending") {
+      console.log("[session] ending phase reached. user:", user?.id ?? "null", "hasLoggedCompletion:", hasLoggedCompletion)
+    }
     if (currentPhase === "ending" && !hasLoggedCompletion && user) {
       const computedMaxScore = computeMaxScore(sessionContent, deepDiveContent)
 
