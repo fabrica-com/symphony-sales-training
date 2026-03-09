@@ -1,16 +1,15 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, Quote, Play, Settings, Construction, Sparkles } from "lucide-react"
+import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, Quote, Play, Construction, Sparkles } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { levelColors } from "@/lib/training-data"
-import { TrainingResultsClient } from "@/components/training-results-client"
 import { getSessionContentFromDB } from "@/lib/session-data"
-import { getDeepDiveContent } from "@/lib/deep-dive-content"
-import { getTrainingByIdFromDb } from "@/lib/db/categories"
+import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
 import { TrainingResults } from "@/components/training-results"
+import { getTrainingResultsFromDb, type TrainingResult } from "@/lib/training-results"
 import { HighlightText, HighlightListItem } from "@/components/training-content-highlighter"
 
 interface TrainingPageProps {
@@ -34,16 +33,21 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
   const sessionContent = await getSessionContentFromDB(training.id)
   const hasSessionContent = sessionContent !== null && sessionContent !== undefined
 
-  const deepDiveContent = getDeepDiveContent(training.id)
+  const deepDiveContent = await getDeepDiveContentFromDb(training.id)
   const hasDeepDive = deepDiveContent !== null && deepDiveContent !== undefined
 
-  const trainingResults = [] // Declare trainingResults variable
+  const rawResults = await getTrainingResultsFromDb(training.id)
+  const trainingResults: TrainingResult[] = rawResults.map((r) => ({
+    ...r,
+    duration: Math.round((r.duration ?? 0) / 60),
+    date: r.completedAt ? new Date(r.completedAt).toLocaleDateString("ja-JP") : undefined,
+  }))
 
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
-        <section className="border-b border-border bg-gradient-to-b from-secondary/50 to-background py-12">
-          <div className="mx-auto max-w-4xl px-4">
+        <section className="border-b border-border bg-linear-to-b from-secondary/50 to-background py-12">
+          <div className="mx-auto max-w-7xl px-4">
             <Link
               href={`/category/${category.id}`}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -79,7 +83,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
         </section>
 
         <section className="py-8">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <div className="grid gap-6 md:grid-cols-3">
               <div className="md:col-span-2 space-y-6">
                 {detail ? (
@@ -115,7 +119,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                             <ul className="space-y-2">
                               {section.content.map((item, i) => (
                                 <li key={i} className="flex items-start gap-2">
-                                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+                                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                                   <span className="text-muted-foreground"><HighlightListItem text={item} /></span>
                                 </li>
                               ))}
@@ -134,7 +138,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                       <Card className="bg-secondary/30 border-secondary">
                         <CardContent className="pt-6">
                           <div className="flex gap-4">
-                            <Quote className="h-8 w-8 text-primary/50 flex-shrink-0" />
+                            <Quote className="h-8 w-8 text-primary/50 shrink-0" />
                             <div>
                               <p className="text-lg italic text-foreground leading-relaxed">"<HighlightText text={detail.quote.text} />"</p>
                               <p className="mt-2 text-sm text-muted-foreground">— <HighlightText text={detail.quote.author} /></p>
@@ -156,7 +160,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                         <ul className="space-y-2">
                           {detail.summary.map((item, i) => (
                             <li key={i} className="flex items-start gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                               <span className="font-medium"><HighlightListItem text={item} /></span>
                             </li>
                           ))}
@@ -166,7 +170,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
 
                     {/* Deep Dive Button */}
                     {hasDeepDive && (
-                      <div className="rounded-xl border-2 border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg">
+                      <div className="rounded-xl border-2 border-blue-400 bg-linear-to-r from-blue-50 to-indigo-50 p-6 shadow-lg">
                         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                           <div className="flex items-center gap-4">
                             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white">
@@ -217,14 +221,14 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                     {hasSessionContent ? (
                       <Link href={`/training/${training.id}/session`}>
                         <Button className="w-full" size="lg">
-                          <Play className="h-5 w-5 flex-shrink-0" />
+                          <Play className="h-5 w-5 shrink-0" />
                           <span>研修開始</span>
                         </Button>
                       </Link>
                     ) : (
                       <div className="space-y-3">
                         <Button className="w-full" size="lg" disabled>
-                          <Construction className="h-5 w-5 flex-shrink-0" />
+                          <Construction className="h-5 w-5 shrink-0" />
                           <span>準備中</span>
                         </Button>
                         <p className="text-xs text-muted-foreground text-center">
@@ -235,7 +239,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                   </CardContent>
                 </Card>
 
-                <TrainingResultsClient trainingId={training.id} />
+                <TrainingResults results={trainingResults} />
 
                 <Card>
                   <CardHeader>
@@ -261,20 +265,6 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">管理者設定</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Link href={`/training/${training.id}/prompts`}>
-                      <Button variant="outline" className="w-full bg-transparent">
-                        <Settings className="h-4 w-4 flex-shrink-0" />
-                        <span>プロンプト編集</span>
-                      </Button>
-                    </Link>
-                    <p className="text-xs text-muted-foreground mt-2">ロープレ・評価用プロンプトを編集</p>
-                  </CardContent>
-                </Card>
               </div>
             </div>
           </div>

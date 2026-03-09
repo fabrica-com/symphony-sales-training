@@ -1,11 +1,11 @@
 "use client"
 
-import React from "react"
-
 import { useState, useEffect, useRef, useCallback } from "react"
+import type React from "react"
 import { Search, X, Clock, BookOpen } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { categories, type Training, type Category } from "@/lib/training-data"
+import type { Training, Category } from "@/lib/training-data"
+import { getAllCategoriesWithTrainingsAction } from "@/app/actions/category-actions"
 import Link from "next/link"
 
 interface SearchResult {
@@ -120,12 +120,12 @@ function calculateRelevanceScore(
   return { score, matchedFields }
 }
 
-function searchTrainings(query: string): SearchResult[] {
+function searchTrainings(cats: Category[], query: string): SearchResult[] {
   if (!query.trim()) return []
 
   const results: SearchResult[] = []
 
-  for (const category of categories) {
+  for (const category of cats) {
     for (const training of category.trainings) {
       const { score, matchedFields } = calculateRelevanceScore(
         training,
@@ -138,10 +138,7 @@ function searchTrainings(query: string): SearchResult[] {
     }
   }
 
-  // Sort by score descending
   results.sort((a, b) => b.score - a.score)
-
-  // Return top 10 results
   return results.slice(0, 10)
 }
 
@@ -150,19 +147,27 @@ export function TrainingSearch({ onResultClick }: TrainingSearchProps = {}) {
   const [results, setResults] = useState<SearchResult[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [categories, setCategories] = useState<Category[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Load categories from DB once
+  useEffect(() => {
+    getAllCategoriesWithTrainingsAction().then((data) => {
+      setCategories(data as Category[])
+    })
+  }, [])
 
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      const searchResults = searchTrainings(query)
+      const searchResults = searchTrainings(categories, query)
       setResults(searchResults)
       setSelectedIndex(-1)
     }, 150)
 
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, categories])
 
   // Close on click outside
   useEffect(() => {
@@ -208,7 +213,7 @@ export function TrainingSearch({ onResultClick }: TrainingSearchProps = {}) {
           break
       }
     },
-    [isOpen, results, selectedIndex]
+    [isOpen, results, selectedIndex, query]
   )
 
   const handleClear = () => {
@@ -217,11 +222,11 @@ export function TrainingSearch({ onResultClick }: TrainingSearchProps = {}) {
     inputRef.current?.focus()
   }
 
-const handleResultClick = () => {
-  setIsOpen(false)
-  setQuery("")
-  setResults([])
-  onResultClick?.()
+  const handleResultClick = () => {
+    setIsOpen(false)
+    setQuery("")
+    setResults([])
+    onResultClick?.()
   }
 
   return (

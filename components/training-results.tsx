@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { type TrainingResult, getScoreColor, getScoreBgColor } from "@/lib/training-results"
+import { type TrainingResult, getScoreColor, getScoreBgColor } from "@/lib/training-results-types"
 
 interface TrainingResultsProps {
   results: TrainingResult[]
@@ -14,8 +14,6 @@ interface TrainingResultsProps {
 
 export function TrainingResults({ results }: TrainingResultsProps) {
   // Debug logs
-  console.log("[v0] TrainingResults component - results count:", results.length)
-  console.log("[v0] TrainingResults component - results data:", results)
   
   const [expandedResult, setExpandedResult] = useState<string | null>(
     results.length > 0 ? results[results.length - 1].id : null,
@@ -42,7 +40,7 @@ export function TrainingResults({ results }: TrainingResultsProps) {
 
   const latestResult = results[results.length - 1]
   const previousResult = results.length > 1 ? results[results.length - 2] : null
-  const improvement = previousResult ? latestResult.overallScore - previousResult.overallScore : 0
+  const improvement = previousResult ? latestResult.score - previousResult.score : 0
 
   return (
     <Card>
@@ -57,14 +55,14 @@ export function TrainingResults({ results }: TrainingResultsProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 最新スコアサマリー */}
-        <div className={`rounded-lg border p-4 ${getScoreBgColor(latestResult.overallScore)}`}>
+        <div className={`rounded-lg border p-4 ${getScoreBgColor(latestResult.score)}`}>
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">最新スコア</span>
             <div className="flex items-center gap-2">
-              <span className={`text-2xl font-bold ${getScoreColor(latestResult.overallScore)}`}>
-                {latestResult.overallScore}
+              <span className={`text-2xl font-bold ${getScoreColor(latestResult.score)}`}>
+                {latestResult.score}
               </span>
-              <span className="text-muted-foreground text-sm">/ 100</span>
+              <span className="text-muted-foreground text-sm">/ {latestResult.maxScore ?? "—"}</span>
             </div>
           </div>
           {improvement !== 0 && (
@@ -104,7 +102,7 @@ export function TrainingResults({ results }: TrainingResultsProps) {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`font-bold ${getScoreColor(result.overallScore)}`}>{result.overallScore}点</span>
+                  <span className={`font-bold ${getScoreColor(result.score)}`}>{result.score}点</span>
                   {expandedResult === result.id ? (
                     <ChevronUp className="h-4 w-4" />
                   ) : (
@@ -124,57 +122,67 @@ export function TrainingResults({ results }: TrainingResultsProps) {
                   </div>
 
                   {/* カテゴリ別評価 */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">カテゴリ別評価</p>
-                    {result.evaluation.map((item, index) => (
-                      <div key={index} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>{item.category}</span>
-                          <span className={getScoreColor(item.score)}>{item.score}点</span>
+                  {result.evaluation && result.evaluation.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">カテゴリ別評価</p>
+                      {result.evaluation.map((item, index) => (
+                        <div key={index} className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span>{item.category}</span>
+                            <span className={getScoreColor(item.score)}>{item.score}点</span>
+                          </div>
+                          <Progress value={item.score} className="h-2" />
+                          <p className="text-xs text-muted-foreground">{item.comment}</p>
                         </div>
-                        <Progress value={item.score} className="h-2" />
-                        <p className="text-xs text-muted-foreground">{item.comment}</p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* フィードバック */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">総合フィードバック</p>
-                    <p className="text-sm text-muted-foreground bg-background rounded p-3">{result.feedback}</p>
-                  </div>
+                  {result.feedback && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">総合フィードバック</p>
+                      <p className="text-sm text-muted-foreground bg-background rounded p-3">{result.feedback}</p>
+                    </div>
+                  )}
 
                   {/* 良かった点・改善点 */}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium flex items-center gap-1 text-emerald-600">
-                        <CheckCircle2 className="h-4 w-4" />
-                        良かった点
-                      </p>
-                      <ul className="space-y-1">
-                        {result.strengths.map((item, index) => (
-                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
-                            <Award className="h-3.5 w-3.5 mt-0.5 text-emerald-500 flex-shrink-0" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
+                  {(result.strengths.length > 0 || result.improvements.length > 0) && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {result.strengths.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium flex items-center gap-1 text-emerald-600">
+                            <CheckCircle2 className="h-4 w-4" />
+                            良かった点
+                          </p>
+                          <ul className="space-y-1">
+                            {result.strengths.map((item, index) => (
+                              <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
+                                <Award className="h-3.5 w-3.5 mt-0.5 text-emerald-500 shrink-0" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {result.improvements.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium flex items-center gap-1 text-amber-600">
+                            <AlertCircle className="h-4 w-4" />
+                            改善点
+                          </p>
+                          <ul className="space-y-1">
+                            {result.improvements.map((item, index) => (
+                              <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
+                                <TrendingUp className="h-3.5 w-3.5 mt-0.5 text-amber-500 shrink-0" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium flex items-center gap-1 text-amber-600">
-                        <AlertCircle className="h-4 w-4" />
-                        改善点
-                      </p>
-                      <ul className="space-y-1">
-                        {result.improvements.map((item, index) => (
-                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
-                            <TrendingUp className="h-3.5 w-3.5 mt-0.5 text-amber-500 flex-shrink-0" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

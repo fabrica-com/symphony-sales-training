@@ -5,9 +5,7 @@ import { Footer } from "@/components/footer"
 import { TrainingItem } from "@/components/training-item"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getCategoryByIdFromDb } from "@/lib/db/categories"
-import { getCategoryTest } from "@/lib/test-data"
-import Header from "@/components/header"
+import { getCategoryByIdFromDb, getCategoryTestFromDb } from "@/lib/db/categories"
 
 interface CategoryPageProps {
   params: Promise<{ id: string }>
@@ -20,7 +18,7 @@ export const dynamic = "force-dynamic"
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { id } = await params
   const category = await getCategoryByIdFromDb(id)
-  const categoryTest = getCategoryTest(id)
+  const categoryTest = await getCategoryTestFromDb(id)
 
   if (!category) {
     notFound()
@@ -29,8 +27,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
-        <section className="border-b border-border bg-gradient-to-b from-secondary/50 to-background py-12">
-          <div className="mx-auto max-w-4xl px-4">
+        <section className="border-b border-border bg-linear-to-b from-secondary/50 to-background py-12">
+          <div className="mx-auto max-w-7xl px-4">
             <Link
               href="/"
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -73,7 +71,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </section>
 
         <section className="py-8">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <h2 className="mb-6 text-xl font-semibold">研修一覧</h2>
             <div className="space-y-3">
               {category.trainings.map((training) => (
@@ -81,9 +79,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               ))}
             </div>
 
-            {/* Deep Dive Button for Category C */}
-            {category.id === "C" && (
-              <div className="mt-10 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 p-6 shadow-lg">
+            {/* Deep Dive: このカテゴリに deep_dive_contents がある場合のみ表示 */}
+            {category.hasDeepDive && (
+              <div className="mt-10 rounded-xl border-2 border-amber-400 bg-linear-to-r from-amber-50 to-orange-50 p-6 shadow-lg">
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-white">
@@ -91,11 +89,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-amber-900">この章をより深く理解したい方へ</h3>
-                      <p className="text-sm text-amber-700">中古車流通の構造と現状を専門的に解説する読み物</p>
+                      <p className="text-sm text-amber-700">専門的に解説する読み物でさらに学べます</p>
                     </div>
                   </div>
                   <Button asChild size="lg" className="w-full bg-amber-500 text-white hover:bg-amber-600 sm:w-auto">
-                    <Link href="/category/C/deep-dive">
+                    <Link href={`/category/${category.id}/deep-dive`}>
                       <BookOpen className="mr-2 h-5 w-5" />
                       この章をより深掘りする
                     </Link>

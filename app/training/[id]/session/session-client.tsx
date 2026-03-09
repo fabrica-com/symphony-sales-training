@@ -27,9 +27,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { Training, Category } from "@/lib/training-data"
-import type { SessionContent } from "@/lib/session-data/types"
-import { getDeepDiveContent } from "@/lib/deep-dive-content"
+import type { SessionContent, DeepDiveReading } from "@/lib/session-data/types"
 import { useAuth } from "@/lib/auth-context"
+import { computeMaxScore } from "@/lib/score-calc"
 
 type SessionPhase =
   | "checkin"
@@ -41,6 +41,7 @@ type SessionPhase =
   | "story2"
   | "quote"
   | "simulation"
+  | "roleplay"
   | "work"
   | "reflection"
   | "complete"
@@ -59,6 +60,7 @@ const phaseOrder: SessionPhase[] = [
   "story2",
   "quote",
   "simulation",
+  "roleplay",
   "work",
   "reflection",
   "complete",
@@ -72,9 +74,10 @@ interface SessionClientProps {
   training: Training
   category: Category
   sessionContent: SessionContent
+  deepDiveContent?: DeepDiveReading | null
 }
 
-export function SessionClient({ training, category, sessionContent }: SessionClientProps) {
+export function SessionClient({ training, category, sessionContent, deepDiveContent: deepDiveContentProp }: SessionClientProps) {
   const { user, addTrainingLog } = useAuth()
   const [currentPhase, setCurrentPhase] = useState<SessionPhase>("checkin")
   const [points, setPoints] = useState(0)
@@ -89,6 +92,9 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
   const [simulationIndex, setSimulationIndex] = useState(0)
   const [simulationAnswer, setSimulationAnswer] = useState<number | null>(null)
   const [showSimulationResult, setShowSimulationResult] = useState(false)
+  const [roleplayIndex, setRoleplayIndex] = useState(0)
+  const [roleplayDialogueIndex, setRoleplayDialogueIndex] = useState(0)
+  const [roleplayComplete, setRoleplayComplete] = useState(false)
   const [reflectionText, setReflectionText] = useState("")
   const [selectedAction, setSelectedAction] = useState<string | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
@@ -96,6 +102,8 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
 
   const [expandedSections, setExpandedSections] = useState<number[]>([])
   const [deepDiveRead, setDeepDiveRead] = useState(false)
+
+  const deepDiveContent = deepDiveContentProp ?? null
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -106,7 +114,17 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
 
   // Log training completion when reaching ending phase
   useEffect(() => {
+    if (currentPhase === "ending") {
+      console.log("[session] ending phase reached. user:", user?.id ?? "null", "hasLoggedCompletion:", hasLoggedCompletion)
+    }
     if (currentPhase === "ending" && !hasLoggedCompletion && user) {
+      const computedMaxScore = computeMaxScore(sessionContent, deepDiveContent)
+
+      const selectedMoodOption = selectedMood !== null ? sessionContent.moodOptions[selectedMood] : null
+      const workAnswers = sessionContent.work?.fields
+        .map((field, i) => ({ label: field.label, value: workFields[i] ?? "" }))
+        .filter((a) => a.value.trim().length > 0)
+
       addTrainingLog({
         odaiNumber: training.id,
         trainingTitle: training.title,
@@ -114,12 +132,16 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         categoryName: category.name,
         completedAt: new Date().toISOString(),
         score: points,
-        maxScore: 200, // Maximum possible points
+        maxScore: computedMaxScore,
         duration: elapsedTime,
+        moodEmoji: selectedMoodOption?.emoji,
+        moodLabel: selectedMoodOption?.label,
+        reflectionText: reflectionText || undefined,
+        workAnswers: workAnswers && workAnswers.length > 0 ? workAnswers : undefined,
       })
       setHasLoggedCompletion(true)
     }
-  }, [currentPhase, hasLoggedCompletion, user, addTrainingLog, training, category, points, elapsedTime])
+  }, [currentPhase, hasLoggedCompletion, user, addTrainingLog, training, category, points, elapsedTime, selectedMood, sessionContent, deepDiveContent, reflectionText, workFields])
 
   const currentPhaseIndex = phaseOrder.indexOf(currentPhase)
   const progress = ((currentPhaseIndex + 1) / phaseOrder.length) * 100
@@ -130,20 +152,38 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const deepDiveContent = getDeepDiveContent(training.id)
-
   const goToNextPhase = () => {
     const currentIndex = phaseOrder.indexOf(currentPhase)
     if (currentIndex < phaseOrder.length - 1) {
       let nextIndex = currentIndex + 1
-      // Skip work phase if no work content
-      if (phaseOrder[nextIndex] === "work" && !sessionContent.work) {
-        nextIndex++
+      // Skip phases if content is missing
+      while (nextIndex < phaseOrder.length) {
+        const nextPhase = phaseOrder[nextIndex]
+        if (nextPhase === "review" && !sessionContent.reviewQuiz) {
+          nextIndex++
+        } else if (nextPhase === "story1" && !sessionContent.story?.part1) {
+          nextIndex++
+        } else if (nextPhase === "story2" && !sessionContent.story?.part2) {
+          nextIndex++
+        } else if (nextPhase === "work" && !sessionContent.work?.fields) {
+          nextIndex++
+        } else if (nextPhase === "deepdive" && !deepDiveContent) {
+          nextIndex++
+        } else if (nextPhase === "infographic" && !sessionContent.infographic) {
+          nextIndex++
+        } else if (nextPhase === "quickcheck" && !sessionContent.quickCheck) {
+          nextIndex++
+        } else if (nextPhase === "simulation" && !sessionContent.simulation) {
+          nextIndex++
+        } else if (nextPhase === "roleplay" && !sessionContent.roleplay) {
+          nextIndex++
+        } else {
+          break
+        }
       }
-      if (phaseOrder[nextIndex] === "deepdive" && !deepDiveContent) {
-        nextIndex++
+      if (nextIndex < phaseOrder.length) {
+        setCurrentPhase(phaseOrder[nextIndex])
       }
-      setCurrentPhase(phaseOrder[nextIndex])
     }
   }
 
@@ -155,7 +195,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
   const handleReviewAnswer = (index: number) => {
     setReviewAnswer(index)
     setShowReviewResult(true)
-    if (index === sessionContent.reviewQuiz.correctIndex) {
+    if (sessionContent.reviewQuiz && index === sessionContent.reviewQuiz.correctIndex) {
       setPoints((prev) => prev + 10)
     }
   }
@@ -172,7 +212,8 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
     setSimulationAnswer(index)
     setShowSimulationResult(true)
     const option = sessionContent.simulation[simulationIndex].options[index]
-    setPoints((prev) => prev + option.points)
+    const pointsToAdd = option.points ?? (option.isCorrect ? 15 : 0)
+    setPoints((prev) => prev + pointsToAdd)
   }
 
   const handleReflectionSubmit = () => {
@@ -217,15 +258,15 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
     goToNextPhase()
   }
 
-  const isWorkComplete = sessionContent.work
+  const isWorkComplete = sessionContent.work?.fields
     ? sessionContent.work.fields.some((_, index) => workFields[index]?.trim())
     : false
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto max-w-2xl px-4 py-3">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="flex items-center justify-between">
             <Link
               href={`/training/${training.id}`}
@@ -249,7 +290,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-4 py-6">
         {/* Phase 1: Checkin */}
         {currentPhase === "checkin" && (
           <Card>
@@ -285,7 +326,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         )}
 
         {/* Phase 1: Review Quiz */}
-        {currentPhase === "review" && (
+        {currentPhase === "review" && sessionContent.reviewQuiz && (
           <Card>
             <CardHeader className="text-center">
               <Badge variant="outline" className="mx-auto mb-2">
@@ -316,7 +357,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                     <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
                     <span className="flex-1">{option}</span>
                     {showReviewResult && index === sessionContent.reviewQuiz.correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 flex-shrink-0" />
+                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                     )}
                   </Button>
                 ))}
@@ -392,7 +433,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         )}
 
         {/* Phase 2: Story Part 1 */}
-        {currentPhase === "story1" && (
+        {currentPhase === "story1" && sessionContent.story?.part1 && sessionContent.story.part1.length > 0 && sessionContent.story.part1[storySceneIndex] && (
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -401,12 +442,12 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                   {storySceneIndex + 1} / {sessionContent.story.part1.length}
                 </span>
               </div>
-              <CardTitle className="text-lg mt-2">{sessionContent.story.part1[storySceneIndex].title}</CardTitle>
+              <CardTitle className="text-lg mt-2">{sessionContent.story.part1[storySceneIndex]?.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg bg-secondary/30 p-4">
                 <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                  {sessionContent.story.part1[storySceneIndex].content}
+                  {sessionContent.story.part1[storySceneIndex]?.content}
                 </pre>
               </div>
               <div className="flex gap-2">
@@ -418,7 +459,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                 <Button
                   className="flex-1"
                   onClick={() => {
-                    if (storySceneIndex < sessionContent.story.part1.length - 1) {
+                    if (sessionContent.story?.part1 && storySceneIndex < sessionContent.story.part1.length - 1) {
                       setStorySceneIndex((prev) => prev + 1)
                     } else {
                       setStorySceneIndex(0)
@@ -427,7 +468,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                     }
                   }}
                 >
-                  {storySceneIndex < sessionContent.story.part1.length - 1 ? (
+                  {sessionContent.story?.part1 && storySceneIndex < sessionContent.story.part1.length - 1 ? (
                     <>
                       次のシーン <ChevronRight className="ml-1 h-4 w-4" />
                     </>
@@ -443,7 +484,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         )}
 
         {/* Phase 2: Infographic */}
-        {currentPhase === "infographic" && (
+        {currentPhase === "infographic" && sessionContent.infographic && (
           <Card>
             <CardHeader className="text-center">
               <Badge variant="outline" className="mx-auto mb-2">
@@ -462,7 +503,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
               </div>
               {sessionContent.infographic.audioText && (
                 <div className="flex items-start gap-3 rounded-lg bg-secondary/30 p-4">
-                  <Volume2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <Volume2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <p className="text-sm">{sessionContent.infographic.audioText}</p>
                 </div>
               )}
@@ -508,7 +549,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                     <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
                     <span className="flex-1">{option}</span>
                     {showQuickCheckResult && index === sessionContent.quickCheck[quickCheckIndex].correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 flex-shrink-0" />
+                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                     )}
                   </Button>
                 ))}
@@ -617,36 +658,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                 <p className="text-sm text-muted-foreground">— {sessionContent.quote.author}</p>
               </div>
               <div className="rounded-lg bg-primary/10 p-4">
-                <p className="text-sm">
-                  💡 断られるたびに、あなたは「うまくいかない方法」を1つ学んでいる。それは前進です。
-                </p>
-              </div>
-              <Button className="w-full" onClick={goToNextPhase}>
-                次へ <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Phase 2: Key Phrase */}
-        {currentPhase === "keyphrase" && (
-          <Card>
-            <CardHeader className="text-center">
-              <Badge variant="outline" className="mx-auto mb-2">
-                今日のキーフレーズ
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="rounded-lg bg-primary/10 border-2 border-primary/30 p-8 text-center">
-                <p className="text-xl font-bold">「{sessionContent.keyPhrase}」</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-4">一緒に声に出してみましょう！</p>
-                <Button variant="outline" className="gap-2 bg-transparent">
-                  <Mic className="h-4 w-4" />
-                  録音開始
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">※声に出すと記憶定着率が2倍になります</p>
+                <p className="text-sm">💡 {sessionContent.quote.textJa}</p>
               </div>
               <Button className="w-full" onClick={goToNextPhase}>
                 次へ <ArrowRight className="ml-2 h-4 w-4" />
@@ -656,7 +668,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
         )}
 
         {/* Phase 3: Simulation */}
-        {currentPhase === "simulation" && (
+        {currentPhase === "simulation" && sessionContent.simulation && sessionContent.simulation.length > 0 && sessionContent.simulation[simulationIndex] && (
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -742,7 +754,141 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
           </Card>
         )}
 
-        {currentPhase === "work" && sessionContent.work && (
+        {/* Roleplay Phase */}
+        {currentPhase === "roleplay" && sessionContent.roleplay && sessionContent.roleplay.length > 0 && sessionContent.roleplay[roleplayIndex] && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Badge variant="outline">
+                  <Mic className="h-3 w-3 mr-1" />
+                  ロールプレイ
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {roleplayIndex + 1} / {sessionContent.roleplay.length}
+                </span>
+              </div>
+              <CardTitle className="text-lg mt-2">{sessionContent.roleplay[roleplayIndex].title}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Situation */}
+              <div className="rounded-lg bg-muted/50 p-4">
+                <p className="text-sm font-medium mb-2">シチュエーション</p>
+                <p className="text-sm text-muted-foreground">{sessionContent.roleplay[roleplayIndex].situation}</p>
+              </div>
+
+              {/* Dialogue */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium">会話の流れ</p>
+                
+                {/* Senior Opening */}
+                {sessionContent.roleplay[roleplayIndex].seniorOpening && (
+                  <div className="flex gap-3">
+                    <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <span className="text-xs font-medium">先輩</span>
+                    </div>
+                    <div className="flex-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
+                      <p className="text-sm">{sessionContent.roleplay[roleplayIndex].seniorOpening}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Dialogue progression */}
+                {sessionContent.roleplay[roleplayIndex].dialogue?.slice(0, roleplayDialogueIndex + 1).map((item, idx) => {
+                  const speaker = String(item.speaker).toLowerCase().trim()
+                  const isSenior = speaker === "senior" || speaker === "customer" || speaker === "先輩"
+                  const isKenta = speaker === "kenta" || speaker === "sales" || speaker === "健太"
+                  return (
+                    <div key={idx} className={cn("flex gap-3", isKenta && "flex-row-reverse")}>
+                      <div className={cn(
+                        "shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+                        isSenior 
+                          ? "bg-blue-100 dark:bg-blue-900/30" 
+                          : "bg-green-100 dark:bg-green-900/30"
+                      )}>
+                        <span className="text-xs font-medium">{isSenior ? "先輩" : "健太"}</span>
+                      </div>
+                      <div className={cn(
+                        "flex-1 rounded-lg p-3",
+                        isSenior 
+                          ? "bg-blue-50 dark:bg-blue-900/20" 
+                          : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                      )}>
+                        <p className="text-sm">{item.line}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* Progress button for dialogue */}
+                {!roleplayComplete && sessionContent.roleplay[roleplayIndex].dialogue && roleplayDialogueIndex < sessionContent.roleplay[roleplayIndex].dialogue.length - 1 && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setRoleplayDialogueIndex(prev => prev + 1)}
+                  >
+                    次の会話を見る <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                )}
+
+                {/* Mark as complete */}
+                {!roleplayComplete && (!sessionContent.roleplay[roleplayIndex].dialogue || roleplayDialogueIndex >= sessionContent.roleplay[roleplayIndex].dialogue.length - 1) && (
+                  <div className="space-y-3 pt-2">
+                    <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">学びのポイント</p>
+                      <ul className="space-y-1">
+                        {sessionContent.roleplay[roleplayIndex].keyPoints?.map((point, idx) => (
+                          <li key={idx} className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+                            {point}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        setRoleplayComplete(true)
+                        setPoints(prev => prev + 20)
+                      }}
+                    >
+                      理解しました +20pt <CheckCircle2 className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Completed - move to next */}
+                {roleplayComplete && (
+                  <div className="space-y-3 pt-2">
+                    <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-center">
+                      <CheckCircle2 className="h-8 w-8 mx-auto text-primary mb-2" />
+                      <p className="font-medium">ロールプレイ完了！</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {sessionContent.roleplay[roleplayIndex].successCriteria}
+                      </p>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        if (roleplayIndex < sessionContent.roleplay!.length - 1) {
+                          setRoleplayIndex(prev => prev + 1)
+                          setRoleplayDialogueIndex(0)
+                          setRoleplayComplete(false)
+                        } else {
+                          goToNextPhase()
+                        }
+                      }}
+                    >
+                      {roleplayIndex < sessionContent.roleplay!.length - 1 ? "次のロールプレイ" : "次へ進む"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {currentPhase === "work" && sessionContent.work?.fields && (
           <Card>
             <CardHeader className="text-center">
               <Badge variant="outline" className="mx-auto mb-2">
@@ -793,9 +939,9 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
               <CardTitle className="text-xl">今日の学びを一言で</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center">{sessionContent.reflection.question}</p>
+              <p className="text-sm text-muted-foreground text-center">{sessionContent.reflection?.question || "今日学んだことで、明日から実践したいことは？"}</p>
               <Textarea
-                placeholder={sessionContent.reflection.placeholder}
+                placeholder={sessionContent.reflection?.placeholder || "自由に記入してください..."}
                 value={reflectionText}
                 onChange={(e) => setReflectionText(e.target.value)}
                 rows={4}
@@ -880,7 +1026,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">今日学んだことを、どう活かしますか？</p>
               <div className="space-y-2">
-                {sessionContent.actionOptions.map((action, index) => (
+                {(sessionContent.actionOptions || ["明日の商談で実践する", "チームに共有する", "資料にまとめる", "もう一度復習する"]).map((action, index) => (
                   <Button
                     key={index}
                     variant={selectedAction === action ? "default" : "outline"}
@@ -933,9 +1079,9 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                     >
                       <span className="font-medium text-sm">{section.title}</span>
                       {expandedSections.includes(index) ? (
-                        <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                       )}
                     </button>
                     {expandedSections.includes(index) && (
@@ -957,12 +1103,42 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                                 </blockquote>
                               )
                             }
-                            // Handle bold headers
+                            // Handle bold-only lines as subheadings
                             if (paragraph.startsWith("**") && paragraph.endsWith("**")) {
                               return (
                                 <h4 key={pIndex} className="font-bold mt-4 mb-2">
                                   {paragraph.replace(/\*\*/g, "")}
                                 </h4>
+                              )
+                            }
+                            // Handle tables
+                            if (paragraph.includes("|") && paragraph.includes("---")) {
+                              const lines = paragraph.split("\n").filter((line) => line.trim())
+                              const headers = lines[0]?.split("|").filter((cell) => cell.trim()).map((cell) => cell.trim())
+                              const rows = lines.slice(2).map((line) =>
+                                line.split("|").filter((cell) => cell.trim()).map((cell) => cell.trim())
+                              )
+                              return (
+                                <div key={pIndex} className="my-4 overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-border bg-secondary/50">
+                                        {headers?.map((header, i) => (
+                                          <th key={i} className="px-3 py-2 text-left font-medium">{header}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rows.map((row, rowIndex) => (
+                                        <tr key={rowIndex} className={`border-b border-border ${rowIndex % 2 === 1 ? "bg-secondary/30" : ""}`}>
+                                          {row.map((cell, cellIndex) => (
+                                            <td key={cellIndex} className="px-3 py-2 text-muted-foreground">{cell}</td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               )
                             }
                             // Handle lists
@@ -981,7 +1157,7 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                                 </div>
                               )
                             }
-                            // Regular paragraphs
+                            // Regular paragraphs with inline bold
                             return (
                               <p key={pIndex} className="text-sm leading-relaxed my-2">
                                 {paragraph
@@ -1005,7 +1181,47 @@ export function SessionClient({ training, category, sessionContent }: SessionCli
                   <Bookmark className="h-4 w-4" />
                   おわりに
                 </h4>
-                <p className="text-sm leading-relaxed whitespace-pre-line">{deepDiveContent.conclusion}</p>
+                <div className="text-sm leading-relaxed">
+                  {deepDiveContent.conclusion.split("\n\n").map((block, bi) => {
+                    if (block.startsWith("**") && block.endsWith("**")) {
+                      return <p key={bi} className="font-bold mt-3 mb-1">{block.replace(/\*\*/g, "")}</p>
+                    }
+                    if (block.startsWith(">")) {
+                      return (
+                        <blockquote key={bi} className="border-l-4 border-primary/50 pl-3 my-3 italic text-muted-foreground">
+                          {block.split("\n").map((line, li) => (
+                            <p key={li} className="mb-0.5 last:mb-0">{line.replace(/^>\s*/, "")}</p>
+                          ))}
+                        </blockquote>
+                      )
+                    }
+                    if (block.match(/^[-•]\s/m) || block.match(/^\d+\.\s/m)) {
+                      const items = block.split("\n").filter(l => l.trim())
+                      return (
+                        <ul key={bi} className="my-2 space-y-1">
+                          {items.map((item, ii) => {
+                            const text = item.replace(/^[-•]\s*/, "").replace(/^\d+\.\s*/, "")
+                            return (
+                              <li key={ii} className="flex items-start gap-1.5">
+                                <span className="mt-1.5 h-1 w-1 rounded-full bg-primary/50 shrink-0" />
+                                <span>{text.split("**").map((part, pi) =>
+                                  pi % 2 === 1 ? <strong key={pi}>{part}</strong> : part
+                                )}</span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )
+                    }
+                    return (
+                      <p key={bi} className="my-2">
+                        {block.split("**").map((part, pi) =>
+                          pi % 2 === 1 ? <strong key={pi}>{part}</strong> : part
+                        )}
+                      </p>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* References */}

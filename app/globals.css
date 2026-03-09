@@ -1,5 +1,7 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+
+/* training_categories.color で DB から渡る動的クラス。Tailwind がスキャンするよう明示 */
+@source inline("bg-blue-500 bg-teal-500 bg-amber-500 bg-rose-500 bg-emerald-500 bg-indigo-500 bg-orange-500 bg-cyan-500 bg-violet-500 bg-slate-600 bg-pink-500 bg-lime-500");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -29,14 +31,6 @@
   --chart-4: 350 60% 50%;
   --chart-5: 140 50% 45%;
   --radius: 0.5rem;
-  --sidebar: 0 0% 98%;
-  --sidebar-foreground: 0 0% 9%;
-  --sidebar-primary: 220 70% 45%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 220 20% 96%;
-  --sidebar-accent-foreground: 220 40% 25%;
-  --sidebar-border: 0 0% 90%;
-  --sidebar-ring: 220 70% 45%;
 }
 
 .dark {
@@ -64,19 +58,11 @@
   --chart-3: 45 70% 65%;
   --chart-4: 350 60% 55%;
   --chart-5: 140 50% 50%;
-  --sidebar: 0 0% 9%;
-  --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 220 70% 55%;
-  --sidebar-primary-foreground: 0 0% 7%;
-  --sidebar-accent: 220 20% 15%;
-  --sidebar-accent-foreground: 220 20% 85%;
-  --sidebar-border: 0 0% 18%;
-  --sidebar-ring: 220 70% 55%;
 }
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback";
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-sans: var(--font-geist-sans), "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  --font-mono: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-card: hsl(var(--card));
@@ -105,14 +91,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: hsl(var(--sidebar));
-  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
-  --color-sidebar-primary: hsl(var(--sidebar-primary));
-  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
-  --color-sidebar-accent: hsl(var(--sidebar-accent));
-  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
-  --color-sidebar-border: hsl(var(--sidebar-border));
-  --color-sidebar-ring: hsl(var(--sidebar-ring));
 }
 
 @layer base {
