@@ -221,7 +221,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.warn("[Auth] Profile fetch warning:", error.message)
           }
         }
-        profile = data
+        // PGRST116 = プロフィール行なし。
+        // on_auth_user_created トリガーが発火しなかった場合（既存ユーザーで DB を再構築したケース等）
+        // はここで自動補完する。
+        if (error?.code === 'PGRST116') {
+          console.warn("[Auth] Profile not found, creating fallback profile for:", session.user.id)
+          const { data: upserted } = await supabaseClient.from("profiles").upsert({
+            id: session.user.id,
+            email: session.user.email ?? "",
+            name: session.user.user_metadata?.full_name ?? session.user.user_metadata?.name ?? null,
+            department: null,
+            join_date: new Date().toISOString().split("T")[0],
+          }, { onConflict: "id" }).select("*").single()
+          profile = upserted
+        } else {
+          profile = data
+        }
       }
 
       const userData: User = {
@@ -319,7 +334,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }))
 
-    await saveTrainingSession({
+    const result = await saveTrainingSession({
       odaiNumber: log.odaiNumber,
       trainingTitle: log.trainingTitle,
       categoryId: log.categoryId,
@@ -333,6 +348,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       reflectionText: log.reflectionText,
       workAnswers: log.workAnswers,
     })
+    if (!result.success) {
+      console.error("[addTrainingLog] saveTrainingSession failed:", result.error)
+    }
   }
 
   // --- Getters ---
