@@ -1,6 +1,19 @@
 import { createClient } from "@/lib/supabase/server"
 import type { SessionContent } from "./types"
 
+// simulation が旧形式（object）の場合に配列に正規化する
+function normalizeSimulation(raw: unknown): SessionContent["simulation"] {
+  if (!raw) return undefined as unknown as SessionContent["simulation"]
+  if (Array.isArray(raw)) return raw as SessionContent["simulation"]
+  // 旧形式: { scenario, customerProfile, options }
+  const obj = raw as Record<string, unknown>
+  return [{
+    situation:    (obj.scenario    as string) ?? "",
+    customerLine: (obj.customerProfile as string) ?? "",
+    options:      (obj.options as SessionContent["simulation"][number]["options"]) ?? [],
+  }]
+}
+
 // DBの行データをSessionContent型に変換
 function mapRowToSessionContent(row: Record<string, unknown>): SessionContent {
   return {
@@ -14,12 +27,12 @@ function mapRowToSessionContent(row: Record<string, unknown>): SessionContent {
     infographic: row.infographic as SessionContent["infographic"],
     quickCheck: row.quick_check as SessionContent["quickCheck"],
     quote: row.quote as SessionContent["quote"],
-  simulation: row.simulation as SessionContent["simulation"],
-  roleplay: row.roleplay as SessionContent["roleplay"],
-  reflection: row.reflection as SessionContent["reflection"],
-  actionOptions: row.action_options as SessionContent["actionOptions"],
-  work: row.work as SessionContent["work"],
-  deepDive: row.deep_dive as SessionContent["deepDive"],
+    simulation: normalizeSimulation(row.simulation),
+    roleplay: row.roleplay as SessionContent["roleplay"],
+    reflection: row.reflection as SessionContent["reflection"],
+    actionOptions: row.action_options as SessionContent["actionOptions"],
+    work: row.work as SessionContent["work"],
+    deepDive: row.deep_dive as SessionContent["deepDive"],
   }
 }
 
