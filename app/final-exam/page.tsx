@@ -356,13 +356,13 @@ export default function FinalExamPage() {
                   {exam.questions[currentQuestion].options.map((option, index) => (
                     <div
                       key={index}
-                      className={`flex items-center space-x-3 rounded-lg border p-4 transition-colors cursor-pointer hover:bg-secondary/50 ${
+                      className={`flex items-start space-x-3 rounded-lg border p-4 transition-colors cursor-pointer hover:bg-secondary/50 ${
                         (selectedAnswer === index || answers[currentQuestion] === index) ? "border-primary bg-primary/5" : ""
                       }`}
                       onClick={() => handleSelectAnswer(index)}
                     >
-                      <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                      <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                      <RadioGroupItem value={index.toString()} id={`option-${index}`} className="mt-0.5 shrink-0" />
+                      <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer leading-relaxed">
                         {option}
                       </Label>
                     </div>
