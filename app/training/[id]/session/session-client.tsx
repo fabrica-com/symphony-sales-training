@@ -336,31 +336,47 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                {sessionContent.reviewQuiz.options.map((option, index) => (
-                  <Button
-                    key={index}
-                    variant={
-                      showReviewResult
-                        ? index === sessionContent.reviewQuiz.correctIndex
-                          ? "default"
+                {sessionContent.reviewQuiz.options.map((option, index) => {
+                  const isCorrect = index === sessionContent.reviewQuiz.correctIndex
+                  return (
+                    <button
+                      key={index}
+                      className={cn(
+                        "w-full rounded-lg border p-4 text-left transition-colors",
+                        showReviewResult
+                          ? isCorrect
+                            ? "border-green-500 bg-green-500/10"
+                            : reviewAnswer === index
+                              ? "border-red-400 bg-red-400/10"
+                              : "border-border bg-muted/30 opacity-60"
                           : reviewAnswer === index
-                            ? "destructive"
-                            : "outline"
-                        : reviewAnswer === index
-                          ? "secondary"
-                          : "outline"
-                    }
-                    className="w-full justify-start h-auto py-3 px-4 text-left"
-                    onClick={() => !showReviewResult && handleReviewAnswer(index)}
-                    disabled={showReviewResult}
-                  >
-                    <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
-                    <span className="flex-1">{option}</span>
-                    {showReviewResult && index === sessionContent.reviewQuiz.correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
-                    )}
-                  </Button>
-                ))}
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-card hover:border-primary/50 hover:bg-muted/50",
+                        showReviewResult ? "cursor-default" : "cursor-pointer"
+                      )}
+                      onClick={() => !showReviewResult && handleReviewAnswer(index)}
+                      disabled={showReviewResult}
+                    >
+                      <div className="flex gap-3 items-start">
+                        <span className={cn(
+                          "shrink-0 h-6 w-6 rounded-full border flex items-center justify-center text-xs font-bold",
+                          showReviewResult
+                            ? isCorrect
+                              ? "border-green-500 bg-green-500 text-white"
+                              : reviewAnswer === index
+                                ? "border-red-400 bg-red-400 text-white"
+                                : "border-muted-foreground text-muted-foreground"
+                            : reviewAnswer === index
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted-foreground text-muted-foreground"
+                        )}>
+                          {showReviewResult && isCorrect ? "✓" : String.fromCharCode(65 + index)}
+                        </span>
+                        <span className="text-sm leading-relaxed">{option}</span>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
               {showReviewResult && (
                 <>
@@ -528,31 +544,49 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                {sessionContent.quickCheck[quickCheckIndex].options.map((option, index) => (
-                  <Button
-                    key={index}
-                    variant={
-                      showQuickCheckResult
-                        ? index === sessionContent.quickCheck[quickCheckIndex].correctIndex
-                          ? "default"
+                {sessionContent.quickCheck[quickCheckIndex].options.map((option, index) => {
+                  const isCorrect = index === sessionContent.quickCheck[quickCheckIndex].correctIndex
+                  return (
+                    <button
+                      key={index}
+                      className={cn(
+                        "w-full rounded-lg border p-4 text-left transition-colors",
+                        showQuickCheckResult
+                          ? isCorrect
+                            ? "border-green-500 bg-green-500/10"
+                            : quickCheckAnswer === index
+                              ? "border-red-400 bg-red-400/10"
+                              : "border-border bg-muted/30 opacity-60"
                           : quickCheckAnswer === index
-                            ? "destructive"
-                            : "outline"
-                        : quickCheckAnswer === index
-                          ? "secondary"
-                          : "outline"
-                    }
-                    className="w-full justify-start h-auto py-3 px-4 text-left"
-                    onClick={() => !showQuickCheckResult && handleQuickCheckAnswer(index)}
-                    disabled={showQuickCheckResult}
-                  >
-                    <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
-                    <span className="flex-1">{option}</span>
-                    {showQuickCheckResult && index === sessionContent.quickCheck[quickCheckIndex].correctIndex && (
-                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
-                    )}
-                  </Button>
-                ))}
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-card hover:border-primary/50 hover:bg-muted/50",
+                        showQuickCheckResult ? "cursor-default" : "cursor-pointer"
+                      )}
+                      onClick={() => !showQuickCheckResult && handleQuickCheckAnswer(index)}
+                      disabled={showQuickCheckResult}
+                    >
+                      <div className="flex gap-3 items-start">
+                        <span className={cn(
+                          "shrink-0 h-6 w-6 rounded-full border flex items-center justify-center text-xs font-bold",
+                          showQuickCheckResult
+                            ? isCorrect
+                              ? "border-green-500 bg-green-500 text-white"
+                              : quickCheckAnswer === index
+                                ? "border-red-400 bg-red-400 text-white"
+                                : "border-muted-foreground text-muted-foreground"
+                            : quickCheckAnswer === index
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted-foreground text-muted-foreground"
+                        )}>
+                          {showQuickCheckResult && isCorrect
+                            ? "✓"
+                            : String.fromCharCode(65 + index)}
+                        </span>
+                        <span className="text-sm leading-relaxed">{option}</span>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
               {showQuickCheckResult && (
                 <>
@@ -689,26 +723,42 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
               <p className="font-medium">あなたの対応は？</p>
               <div className="space-y-2">
                 {sessionContent.simulation[simulationIndex].options.map((option, index) => (
-                  <Button
+                  <button
                     key={index}
-                    variant={
+                    className={cn(
+                      "w-full rounded-lg border p-4 text-left transition-colors",
                       showSimulationResult
                         ? option.isCorrect
-                          ? "default"
+                          ? "border-green-500 bg-green-500/10"
                           : simulationAnswer === index
-                            ? "destructive"
-                            : "outline"
+                            ? "border-red-400 bg-red-400/10"
+                            : "border-border bg-muted/30 opacity-60"
                         : simulationAnswer === index
-                          ? "secondary"
-                          : "outline"
-                    }
-                    className="w-full justify-start h-auto py-3 px-4 text-left"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card hover:border-primary/50 hover:bg-muted/50",
+                      showSimulationResult ? "cursor-default" : "cursor-pointer"
+                    )}
                     onClick={() => !showSimulationResult && handleSimulationAnswer(index)}
                     disabled={showSimulationResult}
                   >
-                    <span className="mr-2 font-medium">{String.fromCharCode(65 + index)})</span>
-                    <span className="flex-1">{option.text}</span>
-                  </Button>
+                    <div className="flex gap-3">
+                      <span className={cn(
+                        "shrink-0 h-6 w-6 rounded-full border flex items-center justify-center text-xs font-bold",
+                        showSimulationResult
+                          ? option.isCorrect
+                            ? "border-green-500 bg-green-500 text-white"
+                            : simulationAnswer === index
+                              ? "border-red-400 bg-red-400 text-white"
+                              : "border-muted-foreground text-muted-foreground"
+                          : simulationAnswer === index
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-muted-foreground text-muted-foreground"
+                      )}>
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                      <span className="text-sm leading-relaxed">{option.text}</span>
+                    </div>
+                  </button>
                 ))}
               </div>
               {showSimulationResult && (
@@ -1027,14 +1077,30 @@ export function SessionClient({ training, category, sessionContent, deepDiveCont
               <p className="text-sm text-muted-foreground text-center">今日学んだことを、どう活かしますか？</p>
               <div className="space-y-2">
                 {(sessionContent.actionOptions || ["明日の商談で実践する", "チームに共有する", "資料にまとめる", "もう一度復習する"]).map((action, index) => (
-                  <Button
+                  <button
                     key={index}
-                    variant={selectedAction === action ? "default" : "outline"}
-                    className="w-full justify-start h-auto py-3 px-4 text-left"
+                    className={cn(
+                      "w-full rounded-lg border p-4 text-left transition-colors",
+                      selectedAction === action
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:border-primary/50 hover:bg-muted/50"
+                    )}
                     onClick={() => handleActionSelect(action)}
                   >
-                    {action}
-                  </Button>
+                    <div className="flex gap-3 items-start">
+                      <span className={cn(
+                        "shrink-0 h-5 w-5 rounded-full border-2 mt-0.5 flex items-center justify-center",
+                        selectedAction === action
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground"
+                      )}>
+                        {selectedAction === action && (
+                          <span className="h-2 w-2 rounded-full bg-white" />
+                        )}
+                      </span>
+                      <span className="text-sm leading-relaxed">{action}</span>
+                    </div>
+                  </button>
                 ))}
               </div>
               {selectedAction && (
