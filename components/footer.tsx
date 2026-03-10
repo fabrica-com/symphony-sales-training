@@ -7,7 +7,7 @@ export function Footer() {
             <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
               <span className="text-sm font-bold text-primary-foreground">S</span>
             </div>
-            <span className="text-sm font-medium">symphony 事業部</span>
+            <span className="text-sm font-medium">ビジネス推進部 symphonyチーム</span>
           </div>
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} 株式会社ファブリカコミュニケーションズ
