@@ -399,9 +399,9 @@ export default function CategoryTestPage() {
                   onValueChange={(v) => handleSelectAnswer(Number(v))}
                 >
                   {currentQ.options.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-secondary/50 transition-colors">
-                      <RadioGroupItem value={String(index)} id={`option-${index}`} />
-                      <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer text-sm">
+                    <div key={index} className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-secondary/50 transition-colors">
+                      <RadioGroupItem value={String(index)} id={`option-${index}`} className="mt-0.5 shrink-0" />
+                      <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer text-sm leading-relaxed">
                         {option}
                       </Label>
                     </div>
