@@ -49,7 +49,7 @@ export async function createTestUser(): Promise<TestUser> {
     email,
     name: 'E2Eテストユーザー',
     department: 'テスト部門',
-    role: 'employee',
+
     join_date: new Date().toISOString().split('T')[0],
   }, { onConflict: 'id' })
 
