@@ -1,6 +1,12 @@
 -- カテゴリB「商品知識：symphonyシリーズ」の研修テスト作成
 -- category_tests に1件 + category_test_questions に50問を挿入
 
+-- training_categories に 'B' が存在しない環境（staging等）向けに保険upsert
+-- production では既にデータがあるため ON CONFLICT で無視される
+INSERT INTO public.training_categories (id, name, description, total_duration, target_level, color, display_order, created_at, updated_at)
+VALUES ('B', '商品知識：symphonyシリーズ', 'Symphony製品の全体像と各機能を理解する', 270, '全レベル', 'bg-teal-500', 1, '2026-01-21T18:04:31.460853+00:00', '2026-01-21T18:04:31.460853+00:00')
+ON CONFLICT (id) DO NOTHING;
+
 -- シーケンスを最新 id に合わせてから挿入
 SELECT setval('category_tests_id_seq', (SELECT MAX(id) FROM category_tests), true);
 SELECT setval('category_test_questions_id_seq', (SELECT MAX(id) FROM category_test_questions), true);
