@@ -395,13 +395,14 @@ export default function CategoryTestPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <RadioGroup
-                  value={selectedAnswer !== null ? String(selectedAnswer) : undefined}
+                  key={currentQuestion}
+                  value={selectedAnswer !== null ? String(selectedAnswer) : ""}
                   onValueChange={(v) => handleSelectAnswer(Number(v))}
                 >
                   {currentQ.options.map((option, index) => (
                     <div key={index} className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-secondary/50 transition-colors">
-                      <RadioGroupItem value={String(index)} id={`option-${index}`} className="mt-0.5 shrink-0" />
-                      <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer text-sm leading-relaxed">
+                      <RadioGroupItem value={String(index)} id={`q${currentQuestion}-option-${index}`} className="mt-0.5 shrink-0" />
+                      <Label htmlFor={`q${currentQuestion}-option-${index}`} className="flex-1 cursor-pointer text-sm leading-relaxed">
                         {option}
                       </Label>
                     </div>
