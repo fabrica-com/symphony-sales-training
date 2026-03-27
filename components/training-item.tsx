@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Clock, ChevronRight } from "lucide-react"
+import { Clock, ChevronRight, CheckCircle2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Training } from "@/lib/training-data"
 import { levelColors } from "@/lib/training-data"
@@ -7,15 +7,27 @@ import { levelColors } from "@/lib/training-data"
 interface TrainingItemProps {
   training: Training
   categoryId: string
+  completed?: boolean
 }
 
-export function TrainingItem({ training, categoryId }: TrainingItemProps) {
+export function TrainingItem({ training, categoryId, completed }: TrainingItemProps) {
   return (
     <Link href={`/training/${training.id}`}>
-      <div className="group flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md">
+      <div className={`group flex items-center justify-between rounded-lg border p-4 transition-all hover:shadow-md ${
+        completed
+          ? "border-blue-200 bg-blue-50/50 hover:border-blue-300"
+          : "border-border bg-card hover:border-primary/30"
+      }`}>
         <div className="flex items-center gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-semibold">
+          <div className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
+            completed
+              ? "bg-blue-500 text-white"
+              : "bg-muted"
+          }`}>
             {String(training.id).padStart(2, "0")}
+            {completed && (
+              <CheckCircle2 className="absolute -right-1 -top-1 h-4 w-4 text-blue-600 fill-white" />
+            )}
           </div>
           <div>
             <h4 className="font-medium group-hover:text-primary transition-colors">{training.title}</h4>
@@ -23,6 +35,11 @@ export function TrainingItem({ training, categoryId }: TrainingItemProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {completed && (
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200">
+              受講済
+            </Badge>
+          )}
           <Badge variant="secondary" className={levelColors[training.level]}>
             {training.level}
           </Badge>

@@ -115,7 +115,10 @@ export async function saveTrainingSession(data: {
       workAnswers: data.workAnswers,
     }).catch((e) => log.error("CHATWORK_NOTIFY_ERROR", { userId, event: "training", message: String(e) }))
 
-    return { success: true }
+    return {
+      success: true,
+      ...(progressError ? { progressSaved: false, progressError: progressError.message } : {}),
+    }
   } catch (error) {
     log.error("SAVE_TRAINING_SESSION_EXCEPTION", {
       odaiNumber: data.odaiNumber,
@@ -197,6 +200,27 @@ export async function submitAndGradeTestAction(data: {
           categoryId: data.categoryId,
           message: insertError.message,
         })
+        return {
+          success: true,
+          saved: false,
+          saveError: insertError.message,
+          score,
+          percentage,
+          passed,
+          correctCount,
+          incorrectCount: testConfig.total_questions - correctCount,
+          attemptNumber,
+          categoryName: testConfig.category_name,
+          questionResults: questions.map((q, i) => ({
+            question: q.question,
+            options: q.options as string[],
+            source: q.source,
+            userAnswer: data.answers[i] ?? -1,
+            correctAnswer: q.correct_answer,
+            isCorrect: data.answers[i] === q.correct_answer,
+            explanation: q.explanation,
+          })),
+        }
       }
 
       // Chatwork 通知
@@ -221,6 +245,7 @@ export async function submitAndGradeTestAction(data: {
 
     return {
       success: true,
+      saved: userId ? true : false,
       score,
       percentage,
       passed,
