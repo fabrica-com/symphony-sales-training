@@ -82,6 +82,9 @@ export default function CategoryTestPage() {
         questionResults: result.questionResults!,
       })
       setPhase("result")
+      if ("saved" in result && result.saved === false) {
+        window.alert("採点結果は表示されましたが、サーバーへの保存に失敗しました。再度テストを受けるか、管理者にお問い合わせください。")
+      }
     } else {
       // エラー時はフォールバック
       setPhase("test")
