@@ -85,24 +85,35 @@ export async function submitAndGradeFinalExamAction(payload: FinalExamResultPayl
           message: error.message,
           code: error.code,
         })
-      } else {
-        log.info("SAVE_FINAL_EXAM_SUCCESS", { userId, correctCount, total: config.total_questions, percentage, passed })
-
-        const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single()
-        await notifyChatworkTaskCompleted({
-          kind: "final_exam",
-          userId,
+        return {
+          success: true as const,
+          saved: false,
+          saveError: error.message,
+          score: correctCount,
           percentage,
           passed,
-          score: correctCount,
           totalQuestions: config.total_questions,
-          userName: profile?.name ?? undefined,
-        }).catch((e) => log.error("CHATWORK_NOTIFY_ERROR", { userId, event: "final_exam", message: String(e) }))
+          questions: graded,
+        }
       }
+
+      log.info("SAVE_FINAL_EXAM_SUCCESS", { userId, correctCount, total: config.total_questions, percentage, passed })
+
+      const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single()
+      await notifyChatworkTaskCompleted({
+        kind: "final_exam",
+        userId,
+        percentage,
+        passed,
+        score: correctCount,
+        totalQuestions: config.total_questions,
+        userName: profile?.name ?? undefined,
+      }).catch((e) => log.error("CHATWORK_NOTIFY_ERROR", { userId, event: "final_exam", message: String(e) }))
     }
 
     return {
       success: true as const,
+      saved: userId ? true : false,
       score: correctCount,
       percentage,
       passed,

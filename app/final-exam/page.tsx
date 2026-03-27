@@ -107,8 +107,12 @@ export default function FinalExamPage() {
         })
         setGradedQuestions(result.questions)
         setPhase("result")
+        if ("saved" in result && result.saved === false) {
+          window.alert("採点結果は表示されましたが、サーバーへの保存に失敗しました。再度テストを受けるか、管理者にお問い合わせください。")
+        }
       } else {
         console.error("Failed to grade exam:", result.error)
+        window.alert("採点に失敗しました。もう一度お試しください。")
       }
     } catch (error) {
       console.error("Failed to submit exam:", error)

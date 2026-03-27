@@ -6,19 +6,33 @@ import { TrainingItem } from "@/components/training-item"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getCategoryByIdFromDb, getCategoryTestFromDb } from "@/lib/db/categories"
+import { getCurrentUserId } from "@/lib/auth-server"
+import { createClient } from "@/lib/supabase/server"
 
 interface CategoryPageProps {
   params: Promise<{ id: string }>
 }
 
-// Disable static generation for this dynamic route
-// since category data comes from the database at request time
 export const dynamic = "force-dynamic"
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { id } = await params
   const category = await getCategoryByIdFromDb(id)
   const categoryTest = await getCategoryTestFromDb(id)
+
+  const userId = await getCurrentUserId()
+  let completedTrainingIds: Set<number> = new Set()
+  if (userId) {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("user_training_progress")
+      .select("training_id")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+    if (data) {
+      completedTrainingIds = new Set(data.map((r) => r.training_id))
+    }
+  }
 
   if (!category) {
     notFound()
@@ -75,7 +89,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             <h2 className="mb-6 text-xl font-semibold">研修一覧</h2>
             <div className="space-y-3">
               {category.trainings.map((training) => (
-                <TrainingItem key={training.id} training={training} categoryId={category.id} />
+                <TrainingItem key={training.id} training={training} categoryId={category.id} completed={completedTrainingIds.has(training.id)} />
               ))}
             </div>
 
