@@ -319,9 +319,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const attemptNumber = trainingLogs.filter(l => l.odaiNumber === log.odaiNumber).length + 1
     
     const newLog: TrainingLog = { ...log, id: crypto.randomUUID(), attemptNumber }
+
+    const prevLogs = trainingLogs
+    const prevProgress = userProgress
+
     setTrainingLogs(prev => [newLog, ...prev])
 
-    // Update Progress State
     const current = userProgress[log.odaiNumber]
     setUserProgress(prev => ({
       ...prev,
@@ -350,6 +353,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     if (!result.success) {
       console.error("[addTrainingLog] saveTrainingSession failed:", result.error)
+      setTrainingLogs(prevLogs)
+      setUserProgress(prevProgress)
+      if (typeof window !== "undefined") {
+        window.alert("研修結果の保存に失敗しました。通信状況を確認し、再度お試しください。")
+      }
     }
   }
 
