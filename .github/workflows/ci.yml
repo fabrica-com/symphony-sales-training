@@ -38,4 +38,4 @@ jobs:
         with:
           version: latest
       - run: supabase db start
-      - run: supabase migration list
+      - run: supabase migration list --local
