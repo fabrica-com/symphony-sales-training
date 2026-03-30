@@ -1,11 +1,12 @@
+# NOTE: staging ブランチは現在未使用。復活時にコメント解除
 name: Deploy Migrations to Staging
 
 on:
-  push:
-    branches:
-      - staging
-    paths:
-      - "supabase/migrations/**"
+  # push:
+  #   branches:
+  #     - staging
+  #   paths:
+  #     - "supabase/migrations/**"
   workflow_dispatch:
 
 jobs:
