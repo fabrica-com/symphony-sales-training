@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, Quote, Play, Construction, Sparkles } from "lucide-react"
+import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, Quote, Construction, Sparkles } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,7 @@ import { levelColors } from "@/lib/training-data"
 import { getSessionContentFromDB } from "@/lib/session-data"
 import { getTrainingByIdFromDb, getDeepDiveContentFromDb, getAllTrainingIds } from "@/lib/db/categories"
 import { TrainingResultsLoader } from "@/components/training-results-loader"
+import { TrainingStartButton } from "@/components/training-start-button"
 import { createStaticClient } from "@/lib/supabase/static"
 import { HighlightText, HighlightListItem } from "@/components/training-content-highlighter"
 
@@ -168,7 +169,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
 
                     {/* Deep Dive Button */}
                     {hasDeepDive && (
-                      <div className="rounded-xl border-2 border-blue-400 bg-linear-to-r from-blue-50 to-indigo-50 p-6 shadow-lg">
+                      <div id="deep-dive-section" className="rounded-xl border-2 border-blue-400 bg-linear-to-r from-blue-50 to-indigo-50 p-6 shadow-lg scroll-mt-8">
                         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                           <div className="flex items-center gap-4">
                             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white">
@@ -217,12 +218,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                   </CardHeader>
                   <CardContent>
                     {hasSessionContent ? (
-                      <Link href={`/training/${training.id}/session`}>
-                        <Button className="w-full" size="lg">
-                          <Play className="h-5 w-5 shrink-0" />
-                          <span>研修開始</span>
-                        </Button>
-                      </Link>
+                      <TrainingStartButton trainingId={training.id} hasDeepDive={hasDeepDive} />
                     ) : (
                       <div className="space-y-3">
                         <Button className="w-full" size="lg" disabled>
