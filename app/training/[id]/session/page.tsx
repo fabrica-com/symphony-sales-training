@@ -1,14 +1,20 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Construction } from "lucide-react"
-import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
+import { getTrainingByIdFromDb, getDeepDiveContentFromDb, getAllTrainingIds } from "@/lib/db/categories"
 import { getSessionContentFromDB } from "@/lib/session-data"
+import { createStaticClient } from "@/lib/supabase/static"
 import { SessionClient } from "./session-client"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  const supabase = createStaticClient()
+  return getAllTrainingIds(supabase)
+}
 
 export default async function SessionPage({
   params,
@@ -18,13 +24,13 @@ export default async function SessionPage({
   const { id } = await params
   const trainingId = Number.parseInt(id)
 
-  const trainingResult = await getTrainingByIdFromDb(trainingId)
+  const supabase = createStaticClient()
+  const trainingResult = await getTrainingByIdFromDb(trainingId, supabase)
   if (!trainingResult) {
     notFound()
   }
 
-  // Supabaseからセッションコンテンツを取得
-  const sessionContent = await getSessionContentFromDB(trainingId)
+  const sessionContent = await getSessionContentFromDB(trainingId, supabase)
 
   // セッションコンテンツがない場合は「準備中」ページを表示
   if (!sessionContent) {
@@ -66,7 +72,7 @@ export default async function SessionPage({
     )
   }
 
-  const deepDive = await getDeepDiveContentFromDb(trainingId)
+  const deepDive = await getDeepDiveContentFromDb(trainingId, supabase)
 
   return (
     <SessionClient

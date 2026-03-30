@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SessionContent } from "./types"
 
 // simulation が旧形式（object）の場合に配列に正規化する
@@ -37,8 +38,8 @@ function mapRowToSessionContent(row: Record<string, unknown>): SessionContent {
 }
 
 // Supabaseからセッションコンテンツを取得
-export async function getSessionContentFromDB(trainingId: number): Promise<SessionContent | null> {
-  const supabase = await createClient()
+export async function getSessionContentFromDB(trainingId: number, client?: SupabaseClient): Promise<SessionContent | null> {
+  const supabase = client ?? await createClient()
   
   
   const { data, error } = await supabase

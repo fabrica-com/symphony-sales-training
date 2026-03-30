@@ -271,3 +271,13 @@ export async function submitAndGradeTestAction(data: {
     return { success: false, error: String(error) }
   }
 }
+
+export async function getTrainingResultsAction(trainingId: number) {
+  const { getTrainingResultsFromDb } = await import("@/lib/training-results")
+  const raw = await getTrainingResultsFromDb(trainingId)
+  return raw.map((r) => ({
+    ...r,
+    duration: Math.round((r.duration ?? 0) / 60),
+    date: r.completedAt ? new Date(r.completedAt).toLocaleDateString("ja-JP") : undefined,
+  }))
+}

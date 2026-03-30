@@ -7,21 +7,26 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { levelColors } from "@/lib/training-data"
 import { getSessionContentFromDB } from "@/lib/session-data"
-import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
-import { TrainingResults } from "@/components/training-results"
-import { getTrainingResultsFromDb, type TrainingResult } from "@/lib/training-results"
+import { getTrainingByIdFromDb, getDeepDiveContentFromDb, getAllTrainingIds } from "@/lib/db/categories"
+import { TrainingResultsLoader } from "@/components/training-results-loader"
+import { createStaticClient } from "@/lib/supabase/static"
 import { HighlightText, HighlightListItem } from "@/components/training-content-highlighter"
 
 interface TrainingPageProps {
   params: Promise<{ id: string }>
 }
 
-// Disable static generation - these pages depend on database content
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  const supabase = createStaticClient()
+  return getAllTrainingIds(supabase)
+}
 
 export default async function TrainingPage({ params }: TrainingPageProps) {
   const { id } = await params
-  const result = await getTrainingByIdFromDb(Number(id))
+  const supabase = createStaticClient()
+  const result = await getTrainingByIdFromDb(Number(id), supabase)
 
   if (!result) {
     notFound()
@@ -30,18 +35,11 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
   const { training, category } = result
   const detail = training.detail
 
-  const sessionContent = await getSessionContentFromDB(training.id)
+  const sessionContent = await getSessionContentFromDB(training.id, supabase)
   const hasSessionContent = sessionContent !== null && sessionContent !== undefined
 
-  const deepDiveContent = await getDeepDiveContentFromDb(training.id)
+  const deepDiveContent = await getDeepDiveContentFromDb(training.id, supabase)
   const hasDeepDive = deepDiveContent !== null && deepDiveContent !== undefined
-
-  const rawResults = await getTrainingResultsFromDb(training.id)
-  const trainingResults: TrainingResult[] = rawResults.map((r) => ({
-    ...r,
-    duration: Math.round((r.duration ?? 0) / 60),
-    date: r.completedAt ? new Date(r.completedAt).toLocaleDateString("ja-JP") : undefined,
-  }))
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -239,7 +237,7 @@ export default async function TrainingPage({ params }: TrainingPageProps) {
                   </CardContent>
                 </Card>
 
-                <TrainingResults results={trainingResults} />
+                <TrainingResultsLoader trainingId={training.id} />
 
                 <Card>
                   <CardHeader>

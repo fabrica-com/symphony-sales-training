@@ -1,38 +1,29 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Clock, BookOpen, Sparkles, FileCheck, Lock } from "lucide-react"
+import { ArrowLeft, Clock, BookOpen, Sparkles } from "lucide-react"
 import { Footer } from "@/components/footer"
-import { TrainingItem } from "@/components/training-item"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getCategoryByIdFromDb, getCategoryTestFromDb } from "@/lib/db/categories"
-import { getCurrentUserId } from "@/lib/auth-server"
-import { createClient } from "@/lib/supabase/server"
+import { getCategoryByIdFromDb, getCategoryTestFromDb, getAllCategoryIds } from "@/lib/db/categories"
+import { createStaticClient } from "@/lib/supabase/static"
+import { CategoryTrainingsClient } from "./category-trainings-client"
 
 interface CategoryPageProps {
   params: Promise<{ id: string }>
 }
 
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  const supabase = createStaticClient()
+  return getAllCategoryIds(supabase)
+}
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { id } = await params
-  const category = await getCategoryByIdFromDb(id)
-  const categoryTest = await getCategoryTestFromDb(id)
-
-  const userId = await getCurrentUserId()
-  let completedTrainingIds: Set<number> = new Set()
-  if (userId) {
-    const supabase = await createClient()
-    const { data } = await supabase
-      .from("user_training_progress")
-      .select("training_id")
-      .eq("user_id", userId)
-      .eq("status", "completed")
-    if (data) {
-      completedTrainingIds = new Set(data.map((r) => r.training_id))
-    }
-  }
+  const supabase = createStaticClient()
+  const category = await getCategoryByIdFromDb(id, supabase)
+  const categoryTest = await getCategoryTestFromDb(id, supabase)
 
   if (!category) {
     notFound()
@@ -70,26 +61,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                   <Badge variant="outline" className="text-sm">
                     対象: {category.targetLevel}
                   </Badge>
-                  {categoryTest && (() => {
-                    const allCompleted = category.trainings.length > 0 &&
-                      category.trainings.every((t) => completedTrainingIds.has(t.id))
-                    if (!allCompleted) {
-                      return (
-                        <Button size="sm" disabled className="ml-auto opacity-50 cursor-not-allowed gap-1">
-                          <Lock className="h-4 w-4" />
-                          全研修完了後に受験可能
-                        </Button>
-                      )
-                    }
-                    return (
-                      <Button asChild size="sm" className="ml-auto bg-green-600 hover:bg-green-700">
-                        <Link href={`/category/${category.id}/test`}>
-                          <FileCheck className="mr-2 h-4 w-4" />
-                          総合テスト ({categoryTest.totalQuestions}問)
-                        </Link>
-                      </Button>
-                    )
-                  })()}
                 </div>
               </div>
             </div>
@@ -98,14 +69,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
         <section className="py-8">
           <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-6 text-xl font-semibold">研修一覧</h2>
-            <div className="space-y-3">
-              {category.trainings.map((training) => (
-                <TrainingItem key={training.id} training={training} categoryId={category.id} completed={completedTrainingIds.has(training.id)} />
-              ))}
-            </div>
+            <CategoryTrainingsClient
+              categoryId={category.id}
+              trainings={category.trainings}
+              categoryTest={categoryTest ? { totalQuestions: categoryTest.totalQuestions } : null}
+            />
 
-            {/* Deep Dive: このカテゴリに deep_dive_contents がある場合のみ表示 */}
             {category.hasDeepDive && (
               <div className="mt-10 rounded-xl border-2 border-amber-400 bg-linear-to-r from-amber-50 to-orange-50 p-6 shadow-lg">
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
