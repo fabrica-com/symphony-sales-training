@@ -23,6 +23,8 @@ export function TrainingStartButton({ trainingId, hasDeepDive }: TrainingStartBu
       setChecking(false)
       return
     }
+    setDeepDiveRead(false)
+    setChecking(true)
     hasReadDeepDive(trainingId).then((read) => {
       setDeepDiveRead(read)
       setChecking(false)
