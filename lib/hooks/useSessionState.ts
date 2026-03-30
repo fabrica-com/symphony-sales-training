@@ -115,7 +115,7 @@ export function useSessionState({
       hasLoggedCompletion.current = true
       const computedMaxScore = computeMaxScore(sessionContent, deepDiveContent)
       const selectedMoodOption = selectedMood !== null ? sessionContent.moodOptions[selectedMood] : null
-      const workAnswers = sessionContent.work?.fields
+      const workAnswers = (sessionContent.work?.fields ?? [])
         .map((field, i) => ({ label: field.label, value: workFields[i] ?? "" }))
         .filter((a) => a.value.trim().length > 0)
 
