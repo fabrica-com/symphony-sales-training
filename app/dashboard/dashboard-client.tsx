@@ -242,7 +242,7 @@ export default function DashboardClient({ categories }: DashboardClientProps) {
                   </Button>
                   {categories.length > 0 && (
                     <Button asChild variant="outline" className="flex-1 bg-transparent">
-                      <Link href={`/category/${categories[0].id}`}>
+                      <Link href={`/category/${categories[0].id}`} prefetch={false}>
                         <Target className="h-4 w-4 mr-2" />
                         {categories[0].name}から始める
                       </Link>
@@ -344,7 +344,7 @@ export default function DashboardClient({ categories }: DashboardClientProps) {
                             }
                             return (
                               <Button asChild size="sm" variant={bestResult?.passed ? "outline" : "default"}>
-                                <Link href={`/category/${category.id}/test`}>
+                                <Link href={`/category/${category.id}/test`} prefetch={false}>
                                   {bestResult ? "再挑戦" : "テストを受ける"}
                                 </Link>
                               </Button>
