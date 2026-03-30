@@ -2287,10 +2287,10 @@ VALUES
   ('aba5a482-a526-4a25-acc9-9b8ec11fe335', 'aba5a482-a526-4a25-acc9-9b8ec11fe335', 'aba5a482-a526-4a25-acc9-9b8ec11fe335', '{"sub":"aba5a482-a526-4a25-acc9-9b8ec11fe335","email":"suzuki@example.com"}', 'email', now(), now(), now());
 
 -- profiles (3 rows) — handle_new_user トリガーが auth.users INSERT で自動作成するが、
--- ここでは明示的に UPSERT して role/department 等を設定する
-INSERT INTO profiles (id, email, name, department, join_date, role) VALUES ('4bec6ab0-2dc9-4e55-b93e-11281abf62e4', 'yamada@example.com', '山田 花子', '営業部', '2026-01-19', 'manager') ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, department = EXCLUDED.department, join_date = EXCLUDED.join_date, role = EXCLUDED.role;
-INSERT INTO profiles (id, email, name, department, join_date, role) VALUES ('72753083-01c9-4119-b5ec-03b0f8a73517', 'admin@example.com', '管理者', 'システム管理部', '2026-01-19', 'manager') ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, department = EXCLUDED.department, join_date = EXCLUDED.join_date, role = EXCLUDED.role;
-INSERT INTO profiles (id, email, name, department, join_date, role) VALUES ('aba5a482-a526-4a25-acc9-9b8ec11fe335', 'suzuki@example.com', '鈴木 太郎', '営業部', '2026-01-19', 'employee') ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, department = EXCLUDED.department, join_date = EXCLUDED.join_date, role = EXCLUDED.role;
+-- ここでは明示的に UPSERT して department 等を設定する（profiles.role は 20260306000003 で削除済み）
+INSERT INTO profiles (id, email, name, department, join_date) VALUES ('4bec6ab0-2dc9-4e55-b93e-11281abf62e4', 'yamada@example.com', '山田 花子', '営業部', '2026-01-19') ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, department = EXCLUDED.department, join_date = EXCLUDED.join_date;
+INSERT INTO profiles (id, email, name, department, join_date) VALUES ('72753083-01c9-4119-b5ec-03b0f8a73517', 'admin@example.com', '管理者', 'システム管理部', '2026-01-19') ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, department = EXCLUDED.department, join_date = EXCLUDED.join_date;
+INSERT INTO profiles (id, email, name, department, join_date) VALUES ('aba5a482-a526-4a25-acc9-9b8ec11fe335', 'suzuki@example.com', '鈴木 太郎', '営業部', '2026-01-19') ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, department = EXCLUDED.department, join_date = EXCLUDED.join_date;
 
 -- training_sessions (36 rows)
 INSERT INTO training_sessions (id, user_id, training_id, category_id, training_title, attempt_number, duration_seconds, overall_score, max_score, evaluation, feedback, strengths, improvements, completed_at, created_at, category_name) VALUES ('0c87451f-4c22-4237-81f0-aa1a4f78c06d', '4bec6ab0-2dc9-4e55-b93e-11281abf62e4', 84, 'I', 'ソリューションセリング', 2, 73, NULL, 100, NULL, NULL, NULL, NULL, '2026-02-12T11:08:46.962+00:00', '2026-02-12T11:08:47.110808+00:00', '上級営業スキル');
