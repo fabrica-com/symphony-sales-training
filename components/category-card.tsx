@@ -10,7 +10,7 @@ interface CategoryCardProps {
 
 export function CategoryCard({ category }: CategoryCardProps) {
   return (
-    <Link href={`/category/${category.id}`}>
+    <Link href={`/category/${category.id}`} prefetch={false}>
       <Card className="group h-full transition-all hover:shadow-lg hover:border-primary/30">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">

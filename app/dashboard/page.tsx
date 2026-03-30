@@ -1,11 +1,13 @@
-import { getAllCategoriesWithTrainingsAction } from "@/app/actions/category-actions"
+import { getAllCategoriesWithTrainings } from "@/lib/db/categories"
+import { createStaticClient } from "@/lib/supabase/static"
 import DashboardClient from "./dashboard-client"
 import type { Category } from "@/lib/training-data"
 
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
 
 export default async function DashboardPage() {
-  const categories = (await getAllCategoriesWithTrainingsAction()) as Category[]
+  const supabase = createStaticClient()
+  const categories = (await getAllCategoriesWithTrainings(supabase)) as Category[]
 
   return <DashboardClient categories={categories} />
 }

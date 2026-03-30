@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Category } from "@/lib/training-data"
 
 // 全カテゴリを取得（トレーニング数を含む）
@@ -46,9 +47,45 @@ export async function getAllCategories(): Promise<Category[]> {
   }))
 }
 
+/**
+ * 全カテゴリ＋研修＋テスト有無を取得（ISR / 静的生成用）。
+ * cookies() を呼ばないため静的コンテキストで安全に使える。
+ */
+export async function getAllCategoriesWithTrainings(client: SupabaseClient): Promise<Category[]> {
+  const [catRes, trainRes, testRes] = await Promise.all([
+    client.from("training_categories").select("*").order("display_order"),
+    client.from("trainings").select("id, category_id, title, subtitle, duration, level, detail, display_order").order("display_order"),
+    client.from("category_tests").select("category_id"),
+  ])
+
+  if (catRes.error || !catRes.data) return []
+
+  const categoryIdsWithTest = new Set((testRes.data ?? []).map((t) => t.category_id))
+
+  return catRes.data.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    description: cat.description,
+    totalDuration: cat.total_duration,
+    targetLevel: cat.target_level,
+    color: cat.color,
+    hasTest: categoryIdsWithTest.has(cat.id),
+    trainings: (trainRes.data ?? [])
+      .filter((t) => t.category_id === cat.id)
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        subtitle: t.subtitle,
+        duration: t.duration,
+        level: t.level,
+        detail: t.detail,
+      })),
+  }))
+}
+
 // 単一カテゴリを取得
-export async function getCategoryByIdFromDb(id: string): Promise<Category | null> {
-  const supabase = await createClient()
+export async function getCategoryByIdFromDb(id: string, client?: SupabaseClient): Promise<Category | null> {
+  const supabase = client ?? await createClient()
 
   const { data: category, error } = await supabase
     .from("training_categories")
@@ -117,11 +154,11 @@ export async function getCategoryByIdFromDb(id: string): Promise<Category | null
 }
 
 // トレーニングIDから単一トレーニングとそのカテゴリを取得
-export async function getTrainingByIdFromDb(trainingId: number): Promise<{
+export async function getTrainingByIdFromDb(trainingId: number, client?: SupabaseClient): Promise<{
   training: Category["trainings"][0]
   category: Category
 } | null> {
-  const supabase = await createClient()
+  const supabase = client ?? await createClient()
 
   // トレーニングを取得
   const { data: training, error } = await supabase
@@ -169,8 +206,8 @@ export async function getTrainingByIdFromDb(trainingId: number): Promise<{
 }
 
 // 全トレーニングIDを取得（generateStaticParams用）
-export async function getAllTrainingIds(): Promise<{ id: string }[]> {
-  const supabase = await createClient()
+export async function getAllTrainingIds(client?: SupabaseClient): Promise<{ id: string }[]> {
+  const supabase = client ?? await createClient()
 
   const { data: trainings, error } = await supabase
     .from("trainings")
@@ -186,8 +223,8 @@ export async function getAllTrainingIds(): Promise<{ id: string }[]> {
 }
 
 // 全カテゴリIDを取得（generateStaticParams用）
-export async function getAllCategoryIds(): Promise<{ id: string }[]> {
-  const supabase = await createClient()
+export async function getAllCategoryIds(client?: SupabaseClient): Promise<{ id: string }[]> {
+  const supabase = client ?? await createClient()
 
   const { data: categories, error } = await supabase
     .from("training_categories")
@@ -215,8 +252,8 @@ export interface DeepDiveContent {
 }
 
 // Deep Diveコンテンツを取得
-export async function getDeepDiveContentFromDb(trainingId: number): Promise<DeepDiveContent | null> {
-  const supabase = await createClient()
+export async function getDeepDiveContentFromDb(trainingId: number, client?: SupabaseClient): Promise<DeepDiveContent | null> {
+  const supabase = client ?? await createClient()
 
   const { data, error } = await supabase
     .from("deep_dive_contents")
@@ -277,8 +314,8 @@ export interface CategoryTest {
 }
 
 // カテゴリテストを取得
-export async function getCategoryTestFromDb(categoryId: string): Promise<CategoryTest | null> {
-  const supabase = await createClient()
+export async function getCategoryTestFromDb(categoryId: string, client?: SupabaseClient): Promise<CategoryTest | null> {
+  const supabase = client ?? await createClient()
 
   // カテゴリテスト設定を取得
   const { data: testData, error: testError } = await supabase
