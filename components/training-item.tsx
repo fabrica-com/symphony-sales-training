@@ -12,7 +12,7 @@ interface TrainingItemProps {
 
 export function TrainingItem({ training, categoryId, completed }: TrainingItemProps) {
   return (
-    <Link href={`/training/${training.id}`}>
+    <Link href={`/training/${training.id}`} prefetch={false}>
       <div className={`group flex items-center justify-between rounded-lg border p-4 transition-all hover:shadow-md ${
         completed
           ? "border-blue-200 bg-blue-50/50 hover:border-blue-300"
