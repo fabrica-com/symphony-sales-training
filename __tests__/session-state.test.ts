@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildActivePhases } from '@/lib/hooks/useSessionState'
+import { buildActivePhases, type SessionPhase } from '@/lib/hooks/useSessionState'
 import type { SessionContent, DeepDiveReading } from '@/lib/session-data/types'
 
 // --- ヘルパー: フル構成の SessionContent ---
@@ -175,7 +175,7 @@ describe('buildActivePhases', () => {
 
   it('フェーズ順序: checkin → mission → reflection → complete → preview → ending の相対順序', () => {
     const phases = buildActivePhases(makeSessionContent(), fullDeepDive)
-    const idx = (p: string) => phases.indexOf(p)
+    const idx = (p: SessionPhase) => phases.indexOf(p)
     expect(idx('checkin')).toBeLessThan(idx('mission'))
     expect(idx('mission')).toBeLessThan(idx('reflection'))
     expect(idx('reflection')).toBeLessThan(idx('complete'))
