@@ -4,6 +4,7 @@ import { getFinalExamFromDb } from "@/lib/db/categories"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserId } from "@/lib/auth-server"
 import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
+import { gradeAnswers } from "@/lib/grading"
 import { log } from "@/lib/logger"
 
 export interface FinalExamResultPayload {
@@ -46,24 +47,23 @@ export async function submitAndGradeFinalExamAction(payload: FinalExamResultPayl
       return { success: false as const, error: "Exam data not found" }
     }
 
-    let correctCount = 0
-    const graded = questions.map((q, i) => {
-      const isCorrect = payload.answers[i] === q.correct_answer
-      if (isCorrect) correctCount++
-      return {
-        id: q.question_number,
-        question: q.question,
-        options: q.options as string[],
-        source: q.source,
-        correctAnswer: q.correct_answer,
-        explanation: q.explanation,
-        userAnswer: payload.answers[i] ?? -1,
-        isCorrect,
-      }
+    const { correctCount, percentage, passed } = gradeAnswers({
+      answers: payload.answers,
+      correctAnswers: questions.map((q) => q.correct_answer),
+      totalQuestions: config.total_questions,
+      passingScore: config.passing_score,
     })
 
-    const percentage = Math.round((correctCount / config.total_questions) * 100)
-    const passed = percentage >= config.passing_score
+    const graded = questions.map((q, i) => ({
+      id: q.question_number,
+      question: q.question,
+      options: q.options as string[],
+      source: q.source,
+      correctAnswer: q.correct_answer,
+      explanation: q.explanation,
+      userAnswer: payload.answers[i] ?? -1,
+      isCorrect: payload.answers[i] === q.correct_answer,
+    }))
 
     // ログイン済みなら結果を保存
     if (userId) {
