@@ -15,6 +15,7 @@ import {
   FileCheck,
   CheckCircle2,
   XCircle,
+  Lock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -330,11 +331,25 @@ export default function DashboardClient({ categories }: DashboardClientProps) {
                               </Badge>
                             )
                           ) : null}
-                          <Button asChild size="sm" variant={bestResult?.passed ? "outline" : "default"}>
-                            <Link href={`/category/${category.id}/test`}>
-                              {bestResult ? "再挑戦" : "テストを受ける"}
-                            </Link>
-                          </Button>
+                          {(() => {
+                            const progress = getCategoryProgress(category.id)
+                            const allCompleted = progress.total > 0 && progress.percentage === 100
+                            if (!allCompleted) {
+                              return (
+                                <Button size="sm" disabled className="opacity-50 cursor-not-allowed gap-1">
+                                  <Lock className="h-3 w-3" />
+                                  全研修完了後に受験可能
+                                </Button>
+                              )
+                            }
+                            return (
+                              <Button asChild size="sm" variant={bestResult?.passed ? "outline" : "default"}>
+                                <Link href={`/category/${category.id}/test`}>
+                                  {bestResult ? "再挑戦" : "テストを受ける"}
+                                </Link>
+                              </Button>
+                            )
+                          })()}
                         </div>
                       </div>
                     )
