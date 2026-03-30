@@ -25,6 +25,7 @@ next-env.d.ts
 # supabase
 .supabase/
 supabase/functions/.env
+supabase/dumps/
 
 # OAuth credentials
 client_secret.json
