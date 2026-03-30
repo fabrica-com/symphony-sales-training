@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Clock, BookOpen, Sparkles, FileCheck } from "lucide-react"
+import { ArrowLeft, Clock, BookOpen, Sparkles, FileCheck, Lock } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { TrainingItem } from "@/components/training-item"
 import { Badge } from "@/components/ui/badge"
@@ -70,14 +70,26 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                   <Badge variant="outline" className="text-sm">
                     対象: {category.targetLevel}
                   </Badge>
-                  {categoryTest && (
-                    <Button asChild size="sm" className="ml-auto bg-green-600 hover:bg-green-700">
-                      <Link href={`/category/${category.id}/test`}>
-                        <FileCheck className="mr-2 h-4 w-4" />
-                        総合テスト ({categoryTest.totalQuestions}問)
-                      </Link>
-                    </Button>
-                  )}
+                  {categoryTest && (() => {
+                    const allCompleted = category.trainings.length > 0 &&
+                      category.trainings.every((t) => completedTrainingIds.has(t.id))
+                    if (!allCompleted) {
+                      return (
+                        <Button size="sm" disabled className="ml-auto opacity-50 cursor-not-allowed gap-1">
+                          <Lock className="h-4 w-4" />
+                          全研修完了後に受験可能
+                        </Button>
+                      )
+                    }
+                    return (
+                      <Button asChild size="sm" className="ml-auto bg-green-600 hover:bg-green-700">
+                        <Link href={`/category/${category.id}/test`}>
+                          <FileCheck className="mr-2 h-4 w-4" />
+                          総合テスト ({categoryTest.totalQuestions}問)
+                        </Link>
+                      </Button>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
