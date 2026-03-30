@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserId } from "@/lib/auth-server"
 import { notifyChatworkTaskCompleted } from "@/lib/notify-chatwork"
 import { clampScore } from "@/lib/score-calc"
+import { gradeAnswers, categoryTestScore, secondsToMinutes, formatDateJP } from "@/lib/grading"
 import { log } from "@/lib/logger"
 
 export async function saveTrainingSession(data: {
@@ -161,14 +162,13 @@ export async function submitAndGradeTestAction(data: {
       return { success: false, error: "Questions not found" }
     }
 
-    // サーバー側採点
-    let correctCount = 0
-    for (let i = 0; i < questions.length; i++) {
-      if (data.answers[i] === questions[i].correct_answer) correctCount++
-    }
-    const percentage = Math.round((correctCount / testConfig.total_questions) * 100)
-    const passed = percentage >= testConfig.passing_score
-    const score = correctCount * 2
+    const { correctCount, percentage, passed } = gradeAnswers({
+      answers: data.answers,
+      correctAnswers: questions.map((q) => q.correct_answer),
+      totalQuestions: testConfig.total_questions,
+      passingScore: testConfig.passing_score,
+    })
+    const score = categoryTestScore(correctCount)
 
     // ログイン済みなら DB 保存
     let attemptNumber = 1
@@ -277,7 +277,7 @@ export async function getTrainingResultsAction(trainingId: number) {
   const raw = await getTrainingResultsFromDb(trainingId)
   return raw.map((r) => ({
     ...r,
-    duration: Math.round((r.duration ?? 0) / 60),
-    date: r.completedAt ? new Date(r.completedAt).toLocaleDateString("ja-JP") : undefined,
+    duration: secondsToMinutes(r.duration ?? 0),
+    date: formatDateJP(r.completedAt),
   }))
 }
