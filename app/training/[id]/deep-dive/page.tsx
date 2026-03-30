@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { getTrainingByIdFromDb, getDeepDiveContentFromDb } from "@/lib/db/categories"
+import { DeepDiveReadMarker } from "@/components/deep-dive-read-marker"
 
 interface DeepDivePageProps {
   params: Promise<{ id: string }>
@@ -27,6 +28,7 @@ export default async function DeepDivePage({ params }: DeepDivePageProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <DeepDiveReadMarker trainingId={trainingId} />
       <main className="flex-1">
         {/* Hero Section */}
         <section className="border-b border-border bg-linear-to-b from-blue-50 to-background py-12">
