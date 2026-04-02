@@ -10,6 +10,9 @@ interface EndingPhaseProps {
   elapsedTime: number
   formatTime: (seconds: number) => string
   user: User | null
+  currentIndex?: number
+  totalCount?: number
+  nextTrainingId?: number
 }
 
 export function EndingPhase({
@@ -19,6 +22,9 @@ export function EndingPhase({
   elapsedTime,
   formatTime,
   user,
+  currentIndex = 0,
+  totalCount = 0,
+  nextTrainingId,
 }: EndingPhaseProps) {
   return (
     <Card>
@@ -50,6 +56,12 @@ export function EndingPhase({
           明日も一緒に頑張りましょう！
         </p>
 
+        {totalCount > 0 && (
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+            <p className="text-sm text-blue-800">進捗: {currentIndex}/{totalCount}</p>
+          </div>
+        )}
+
         {user && (
           <div className="rounded-lg bg-green-50 border border-green-200 p-3">
             <p className="text-sm text-green-800">学習履歴が保存されました</p>
@@ -57,6 +69,13 @@ export function EndingPhase({
         )}
 
         <div className="flex flex-col gap-3">
+          {nextTrainingId && (
+            <Link href={`/training/${nextTrainingId}/session`}>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                次の研修へ進む →
+              </Button>
+            </Link>
+          )}
           {user ? (
             <>
               <Link href="/dashboard">
