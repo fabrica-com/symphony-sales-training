@@ -109,8 +109,9 @@ export async function getPreviousTestResultAction(categoryId: string): Promise<P
 
   if (error || !results || results.length === 0) return null
 
-  // 最新が1回目なら、2番目の試行を前回とする
-  const previousResult = results.length > 1 ? results[1] : null
+  // 最新（results[0]）が前回の試行
+  // （ページロード時点では、まだ現在の提出結果がないため）
+  const previousResult = results[0]
 
   if (!previousResult) return null
 
@@ -174,8 +175,9 @@ export async function getPreviousTestResultDetailAction(categoryId: string): Pro
 
   if (error || !results || results.length === 0) return null
 
-  // 最新が1回目なら、2番目の試行を前回とする
-  const previousResult = results.length > 1 ? results[1] : null
+  // 最新（results[0]）が前回の試行
+  // （ページロード時点では、まだ現在の提出結果がないため）
+  const previousResult = results[0]
 
   if (!previousResult) return null
 
