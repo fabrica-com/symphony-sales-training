@@ -146,11 +146,14 @@ export default function CategoryTestPage() {
   }
 
   const handleStartTest = () => {
+    console.log("handleStartTest called, previousResult:", previousResult)
     if (previousResult && previousResult.incorrectQuestionIndices.length > 0) {
       // 前回の復習ができるなら、モード選択画面へ
+      console.log("Going to mode-selection, incorrectCount:", previousResult.incorrectQuestionIndices.length)
       setPhase("mode-selection")
     } else {
       // 初回受験か、前回で全問正解なら、新規テスト開始
+      console.log("Initializing new test")
       initializeNewTest()
     }
   }
