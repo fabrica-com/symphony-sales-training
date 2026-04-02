@@ -8,6 +8,8 @@ interface SessionHeaderProps {
   points: number
   progress: number
   formatTime: (seconds: number) => string
+  currentIndex?: number
+  totalCount?: number
 }
 
 export function SessionHeader({
@@ -16,6 +18,8 @@ export function SessionHeader({
   points,
   progress,
   formatTime,
+  currentIndex = 0,
+  totalCount = 0,
 }: SessionHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
@@ -29,6 +33,11 @@ export function SessionHeader({
             終了
           </Link>
           <div className="flex items-center gap-4">
+            {totalCount > 0 && (
+              <div className="text-sm text-muted-foreground">
+                進捗: {currentIndex}/{totalCount}
+              </div>
+            )}
             <div className="flex items-center gap-1 text-sm">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>{formatTime(elapsedTime)}</span>

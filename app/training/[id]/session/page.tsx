@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Construction } from "lucide-react"
-import { getTrainingByIdFromDb, getDeepDiveContentFromDb, getAllTrainingIds } from "@/lib/db/categories"
+import { getTrainingByIdFromDb, getDeepDiveContentFromDb, getAllTrainingIds, getCategoryByIdFromDb } from "@/lib/db/categories"
 import { getSessionContentFromDB } from "@/lib/session-data"
 import { createStaticClient } from "@/lib/supabase/static"
 import { SessionClient } from "./session-client"
@@ -74,6 +74,23 @@ export default async function SessionPage({
 
   const deepDive = await getDeepDiveContentFromDb(trainingId, supabase)
 
+  // カテゴリ内の研修一覧から現在の研修のインデックスと次の研修を取得
+  const categoryData = await getCategoryByIdFromDb(trainingResult.category.id, supabase)
+  let currentIndex = 0
+  let totalCount = 0
+  let nextTrainingId: number | undefined = undefined
+
+  if (categoryData && categoryData.trainings.length > 0) {
+    totalCount = categoryData.trainings.length
+    const currentTrainingIndex = categoryData.trainings.findIndex((t) => t.id === trainingId)
+    if (currentTrainingIndex !== -1) {
+      currentIndex = currentTrainingIndex + 1 // 1-indexed
+      if (currentTrainingIndex + 1 < categoryData.trainings.length) {
+        nextTrainingId = categoryData.trainings[currentTrainingIndex + 1].id
+      }
+    }
+  }
+
   return (
     <SessionClient
       training={trainingResult.training}
@@ -87,6 +104,9 @@ export default async function SessionPage({
         conclusion: deepDive.conclusion,
         references: deepDive.references ?? undefined,
       } : null}
+      currentIndex={currentIndex}
+      totalCount={totalCount}
+      nextTrainingId={nextTrainingId}
     />
   )
 }
