@@ -48,3 +48,18 @@ export interface TestGradingResult {
   incorrectCount: number
   questionResults: QuestionResult[]
 }
+
+/** 前回のテスト結果（一覧表示用） */
+export interface PreviousTestResult {
+  percentage: number
+  correctCount: number
+  totalQuestions: number
+  completedAt: string
+  incorrectQuestionIndices: number[]
+}
+
+/** 前回のテスト詳細（詳細ページ用） */
+export interface PreviousTestResultDetail extends PreviousTestResult {
+  score: number
+  questionResults: QuestionResult[]
+}
