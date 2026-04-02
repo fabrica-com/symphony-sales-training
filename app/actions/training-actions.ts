@@ -192,6 +192,7 @@ export async function submitAndGradeTestAction(data: {
         total_questions: testConfig.total_questions,
         duration_seconds: data.duration,
         attempt_number: attemptNumber,
+        answers: data.answers,
       })
 
       if (insertError) {
