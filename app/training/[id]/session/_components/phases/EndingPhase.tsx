@@ -70,7 +70,7 @@ export function EndingPhase({
 
         <div className="flex flex-col gap-3">
           {nextTrainingId && (
-            <Link href={`/training/${nextTrainingId}/session`}>
+            <Link href={`/training/${nextTrainingId}`}>
               <Button className="w-full bg-blue-600 hover:bg-blue-700">
                 次の研修へ進む →
               </Button>
