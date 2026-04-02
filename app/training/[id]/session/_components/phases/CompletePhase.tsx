@@ -9,6 +9,9 @@ interface CompletePhaseProps {
   trainingTitle: string
   badge: { name: string; icon: string }
   points: number
+  currentIndex?: number
+  totalCount?: number
+  nextTrainingId?: number
   onNext: () => void
 }
 

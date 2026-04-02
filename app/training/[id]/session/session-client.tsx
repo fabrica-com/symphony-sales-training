@@ -26,6 +26,9 @@ interface SessionClientProps {
   category: Category
   sessionContent: SessionContent
   deepDiveContent?: DeepDiveReading | null
+  currentIndex?: number
+  totalCount?: number
+  nextTrainingId?: number
 }
 
 export function SessionClient({
@@ -33,6 +36,9 @@ export function SessionClient({
   category,
   sessionContent,
   deepDiveContent: deepDiveContentProp,
+  currentIndex = 0,
+  totalCount = 0,
+  nextTrainingId,
 }: SessionClientProps) {
   const deepDiveContent = deepDiveContentProp ?? null
 
@@ -46,6 +52,8 @@ export function SessionClient({
         points={s.points}
         progress={s.progress}
         formatTime={s.formatTime}
+        currentIndex={currentIndex}
+        totalCount={totalCount}
       />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
@@ -173,6 +181,9 @@ export function SessionClient({
             trainingTitle={training.title}
             badge={sessionContent.badge}
             points={s.points}
+            currentIndex={currentIndex}
+            totalCount={totalCount}
+            nextTrainingId={nextTrainingId}
             onNext={s.goToNextPhase}
           />
         )}
@@ -209,6 +220,9 @@ export function SessionClient({
             elapsedTime={s.elapsedTime}
             formatTime={s.formatTime}
             user={s.user}
+            currentIndex={currentIndex}
+            totalCount={totalCount}
+            nextTrainingId={nextTrainingId}
           />
         )}
       </main>
