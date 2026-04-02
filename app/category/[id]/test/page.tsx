@@ -3,18 +3,19 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Clock, CheckCircle2, XCircle, AlertCircle, Trophy, RotateCcw } from "lucide-react"
+import { ArrowLeft, Clock, CheckCircle2, XCircle, AlertCircle, Trophy, RotateCcw, ChevronDown } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import type { CategoryTest, QuestionResult } from "@/lib/test-data"
+import type { CategoryTest, QuestionResult, PreviousTestResult } from "@/lib/test-data"
 import type { Category } from "@/lib/training-data"
 import { useAuth } from "@/lib/auth-context"
-import { getCategoryByIdAction, getCategoryTestAction } from "@/app/actions/category-actions"
+import { getCategoryByIdAction, getCategoryTestAction, getPreviousTestResultAction, getPreviousTestResultDetailAction } from "@/app/actions/category-actions"
 import { submitAndGradeTestAction } from "@/app/actions/training-actions"
+import type { PreviousTestResultDetail } from "@/lib/test-data"
 
 type TestPhase = "intro" | "test" | "submitting" | "result"
 
@@ -42,18 +43,26 @@ export default function CategoryTestPage() {
   const [timeRemaining, setTimeRemaining] = useState(0)
   const [gradingResult, setGradingResult] = useState<GradingResult | null>(null)
   const [showExplanation, setShowExplanation] = useState(false)
+  const [previousResult, setPreviousResult] = useState<PreviousTestResult | null>(null)
+  const [previousDetailResult, setPreviousDetailResult] = useState<PreviousTestResultDetail | null>(null)
+  const [showPreviousDetail, setShowPreviousDetail] = useState(false)
+  const [loadingPreviousDetail, setLoadingPreviousDetail] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
       try {
         const categoryData = await getCategoryByIdAction(categoryId)
         const testData = await getCategoryTestAction(categoryId)
+        const prevResult = await getPreviousTestResultAction(categoryId)
 
         if (categoryData) setCategory(categoryData)
         if (testData) {
           setTest(testData)
           setTimeRemaining(testData.timeLimit * 60)
           setAnswers(new Array(testData.questions.length).fill(-1))
+        }
+        if (prevResult) {
+          setPreviousResult(prevResult)
         }
       } finally {
         setLoading(false)
@@ -156,6 +165,19 @@ export default function CategoryTestPage() {
     setGradingResult(null)
     setShowExplanation(false)
   }
+
+  const handleShowPreviousDetail = useCallback(async () => {
+    setLoadingPreviousDetail(true)
+    try {
+      const detail = await getPreviousTestResultDetailAction(categoryId)
+      if (detail) {
+        setPreviousDetailResult(detail)
+        setShowPreviousDetail(true)
+      }
+    } finally {
+      setLoadingPreviousDetail(false)
+    }
+  }, [categoryId])
 
   if (loading) {
     return (
@@ -349,6 +371,146 @@ export default function CategoryTestPage() {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            )}
+
+            {/* 前回のテスト結果セクション */}
+            {previousResult && !showPreviousDetail && (
+              <div className="mx-auto max-w-2xl mt-8">
+                <Card className="border-blue-200 bg-blue-50/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      📊 前回のテスト結果
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-sm text-muted-foreground">
+                      実施日時: {new Date(previousResult.completedAt).toLocaleDateString("ja-JP", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium">成績: {previousResult.percentage}%</span>
+                        <span className="text-sm text-muted-foreground">
+                          {previousResult.correctCount}/{previousResult.totalQuestions}問正解
+                        </span>
+                      </div>
+                      <Progress value={previousResult.percentage} className="h-2" />
+                    </div>
+                    {previousResult.incorrectQuestionIndices.length > 0 && (
+                      <div>
+                        <p className="font-medium mb-3">
+                          ❌ 間違えた問題: {previousResult.incorrectQuestionIndices.length}問
+                        </p>
+                        <div className="space-y-2">
+                          {previousResult.incorrectQuestionIndices.slice(0, 5).map((qIndex) => {
+                            const q = test?.questions[qIndex]
+                            return (
+                              <div key={qIndex} className="text-sm text-muted-foreground line-clamp-1">
+                                問{qIndex + 1} {q?.question}
+                              </div>
+                            )
+                          })}
+                          {previousResult.incorrectQuestionIndices.length > 5 && (
+                            <div className="text-sm text-muted-foreground">
+                              ...ほか {previousResult.incorrectQuestionIndices.length - 5}問
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleShowPreviousDetail}
+                      disabled={loadingPreviousDetail}
+                    >
+                      {loadingPreviousDetail ? "読み込み中..." : "すべての間違いを確認する →"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* 前回の詳細結果 */}
+            {previousResult && showPreviousDetail && previousDetailResult && (
+              <div className="mx-auto max-w-2xl mt-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPreviousDetail(false)}
+                  >
+                    ← 戻る
+                  </Button>
+                  <h2 className="text-lg font-semibold">前回のテスト結果 詳細</h2>
+                </div>
+
+                <Card className="mb-6">
+                  <CardContent className="pt-6">
+                    <div className="text-sm text-muted-foreground mb-2">
+                      成績: {previousDetailResult.percentage}% ({previousDetailResult.correctCount}/{previousDetailResult.totalQuestions}問)
+                    </div>
+                    <Progress value={previousDetailResult.percentage} className="h-2 mb-4" />
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        setShowPreviousDetail(false)
+                        handleRetryTest()
+                      }}
+                    >
+                      テストに再挑戦
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  {previousDetailResult.questionResults.map((qr, i) => {
+                    const isIncorrect = !qr.isCorrect
+                    if (!isIncorrect) return null
+                    return (
+                      <Card key={i} className="border-red-200">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-3 mb-4">
+                            <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-sm">問{i + 1} {qr.question}</p>
+                              <p className="text-xs text-muted-foreground mt-1">出典: {qr.source}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2 ml-8">
+                            {qr.options.map((opt, oi) => (
+                              <div
+                                key={oi}
+                                className={`text-sm rounded-md px-3 py-2 ${
+                                  oi === qr.correctAnswer
+                                    ? "bg-green-50 text-green-700 font-medium"
+                                    : oi === qr.userAnswer && !qr.isCorrect
+                                      ? "bg-red-50 text-red-700"
+                                      : "text-muted-foreground"
+                                }`}
+                              >
+                                {String.fromCharCode(65 + oi)}) {opt}
+                                {oi === qr.correctAnswer && " ✓"}
+                                {oi === qr.userAnswer && oi !== qr.correctAnswer && " ✗"}
+                              </div>
+                            ))}
+                          </div>
+                          {qr.explanation && (
+                            <div className="mt-3 ml-8 rounded-lg bg-secondary/50 p-3">
+                              <p className="text-sm text-muted-foreground">{qr.explanation}</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
