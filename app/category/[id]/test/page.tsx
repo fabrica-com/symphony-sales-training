@@ -192,7 +192,8 @@ export default function CategoryTestPage() {
     setAnswers(newAnswers)
     setSelectedAnswer(null)
 
-    if (currentQuestion < test.questions.length - 1) {
+    const maxQuestion = testMode === "review" ? reviewQuestionIndices.length - 1 : test.questions.length - 1
+    if (currentQuestion < maxQuestion) {
       setCurrentQuestion(currentQuestion + 1)
     }
   }
