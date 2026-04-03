@@ -262,6 +262,8 @@ export default function CategoryTestPage() {
     )
   }
 
+  // Calculate common values after all states are set
+  const questionCount = testMode === "review" ? reviewQuestionIndices.length : test.questions.length
   const answeredCount = answers.filter((a) => a >= 0).length
   const progressPercentage = (answeredCount / questionCount) * 100
 
@@ -637,7 +639,6 @@ export default function CategoryTestPage() {
 
 
   // Test phase
-  const questionCount = testMode === "review" ? reviewQuestionIndices.length : test.questions.length
   const actualQuestionIndex = testMode === "review" ? reviewQuestionIndices[currentQuestion] : currentQuestion
   const currentQ = test.questions[actualQuestionIndex]
 
