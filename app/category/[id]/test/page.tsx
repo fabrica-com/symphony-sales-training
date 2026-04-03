@@ -195,7 +195,9 @@ export default function CategoryTestPage() {
     setAnswers(newAnswers)
     setSelectedAnswer(null)
 
-    if (currentQuestion < test.questions.length - 1) {
+    // 復習モード時は reviewQuestionIndices.length、新規テスト時は test.questions.length を使う
+    const maxQuestion = testMode === "review" ? reviewQuestionIndices.length : test.questions.length
+    if (currentQuestion < maxQuestion - 1) {
       setCurrentQuestion(currentQuestion + 1)
     }
   }
@@ -261,7 +263,7 @@ export default function CategoryTestPage() {
   }
 
   const answeredCount = answers.filter((a) => a >= 0).length
-  const progressPercentage = (answeredCount / test.questions.length) * 100
+  const progressPercentage = (answeredCount / questionCount) * 100
 
   // Intro phase
   if (phase === "intro") {
@@ -316,7 +318,8 @@ export default function CategoryTestPage() {
   }
 
   // Mode selection phase
-  if (phase === "mode-selection" && previousResult) {
+  if (phase === "mode-selection") {
+    if (!previousResult) return null  // safeguard
     const reviewCount = previousResult.incorrectQuestionIndices.length
     const reviewDuration = Math.ceil((reviewCount / test!.totalQuestions) * test!.timeLimit)
 
@@ -637,6 +640,30 @@ export default function CategoryTestPage() {
   const questionCount = testMode === "review" ? reviewQuestionIndices.length : test.questions.length
   const actualQuestionIndex = testMode === "review" ? reviewQuestionIndices[currentQuestion] : currentQuestion
   const currentQ = test.questions[actualQuestionIndex]
+
+  // Debug
+  if (!currentQ) {
+    console.error("currentQ is undefined", {
+      testMode,
+      currentQuestion,
+      reviewQuestionIndices,
+      actualQuestionIndex,
+      testQuestionsLength: test?.questions.length,
+      testMode_is_review: testMode === "review"
+    })
+  }
+
+  // Safeguard: currentQ が undefined なら画面をスキップ
+  if (!currentQ) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">問題を読み込み中...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
