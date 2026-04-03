@@ -17,7 +17,8 @@ import { getCategoryByIdAction, getCategoryTestAction, getPreviousTestResultActi
 import { submitAndGradeTestAction } from "@/app/actions/training-actions"
 import type { PreviousTestResultDetail } from "@/lib/test-data"
 
-type TestPhase = "intro" | "test" | "submitting" | "result"
+type TestPhase = "intro" | "mode-selection" | "test" | "submitting" | "result"
+type TestMode = "new" | "review"
 
 interface GradingResult {
   score: number
@@ -47,6 +48,8 @@ export default function CategoryTestPage() {
   const [previousDetailResult, setPreviousDetailResult] = useState<PreviousTestResultDetail | null>(null)
   const [showPreviousDetail, setShowPreviousDetail] = useState(false)
   const [loadingPreviousDetail, setLoadingPreviousDetail] = useState(false)
+  const [testMode, setTestMode] = useState<TestMode>("new")
+  const [reviewQuestionIndices, setReviewQuestionIndices] = useState<number[]>([])
 
   useEffect(() => {
     async function fetchData() {
@@ -75,10 +78,24 @@ export default function CategoryTestPage() {
     if (!test || phase === "submitting") return
     setPhase("submitting")
 
+    // 復習モード時は answers をマッピング
+    let submittedAnswers = answers
+    if (testMode === "review") {
+      const fullAnswers = new Array(test.totalQuestions).fill(-1)
+      reviewQuestionIndices.forEach((qIndex, answerIndex) => {
+        fullAnswers[qIndex] = answers[answerIndex] ?? -1
+      })
+      submittedAnswers = fullAnswers
+    }
+
+    const baseTimeLimit = testMode === "review"
+      ? Math.ceil((reviewQuestionIndices.length / test.totalQuestions) * (test.timeLimit * 60))
+      : test.timeLimit * 60
+
     const result = await submitAndGradeTestAction({
       categoryId: test.categoryId,
-      duration: (test.timeLimit * 60) - timeRemaining,
-      answers,
+      duration: baseTimeLimit - timeRemaining,
+      answers: submittedAnswers,
     })
 
     if (result.success && "questionResults" in result) {
@@ -129,8 +146,38 @@ export default function CategoryTestPage() {
   }
 
   const handleStartTest = () => {
-    setPhase("test")
+    if (previousResult && previousResult.incorrectQuestionIndices.length > 0) {
+      // 前回の復習ができるなら、モード選択画面へ
+      setPhase("mode-selection")
+    } else {
+      // 初回受験か、前回で全問正解なら、新規テスト開始
+      initializeNewTest()
+    }
+  }
+
+  const initializeNewTest = () => {
+    if (!test) return
+    setTestMode("new")
     setCurrentQuestion(0)
+    setAnswers(new Array(test.questions.length).fill(-1))
+    setSelectedAnswer(null)
+    setTimeRemaining(test.timeLimit * 60)
+    setPhase("test")
+  }
+
+  const initializeReviewTest = () => {
+    if (!test || !previousResult) return
+    const incorrectIndices = previousResult.incorrectQuestionIndices
+    setTestMode("review")
+    setReviewQuestionIndices(incorrectIndices)
+    setCurrentQuestion(0)
+    setAnswers(new Array(incorrectIndices.length).fill(-1))
+    setSelectedAnswer(null)
+    // 復習用の制限時間: 問題数に比例して調整
+    const baseDuration = test.timeLimit * 60 // 秒
+    const reviewDuration = Math.ceil((incorrectIndices.length / test.totalQuestions) * baseDuration)
+    setTimeRemaining(reviewDuration)
+    setPhase("test")
   }
 
   const handleSelectAnswer = (index: number) => {
@@ -145,7 +192,8 @@ export default function CategoryTestPage() {
     setAnswers(newAnswers)
     setSelectedAnswer(null)
 
-    if (currentQuestion < test.questions.length - 1) {
+    const maxQuestion = testMode === "review" ? reviewQuestionIndices.length - 1 : test.questions.length - 1
+    if (currentQuestion < maxQuestion) {
       setCurrentQuestion(currentQuestion + 1)
     }
   }
@@ -157,11 +205,12 @@ export default function CategoryTestPage() {
 
   const handleRetryTest = () => {
     if (!test) return
-    setPhase("intro")
-    setCurrentQuestion(0)
-    setAnswers(new Array(test.questions.length).fill(-1))
-    setSelectedAnswer(null)
-    setTimeRemaining(test.timeLimit * 60)
+    // 前回の復習ができるなら mode-selection へ、なければ新規テストへ
+    if (previousResult && previousResult.incorrectQuestionIndices.length > 0) {
+      setPhase("mode-selection")
+    } else {
+      initializeNewTest()
+    }
     setGradingResult(null)
     setShowExplanation(false)
   }
@@ -264,6 +313,67 @@ export default function CategoryTestPage() {
     )
   }
 
+  // Mode selection phase
+  if (phase === "mode-selection" && previousResult) {
+    const reviewCount = previousResult.incorrectQuestionIndices.length
+    const reviewDuration = Math.ceil((reviewCount / test!.totalQuestions) * test!.timeLimit)
+
+    return (
+      <div className="flex min-h-screen flex-col">
+        <main className="flex-1 py-12">
+          <div className="mx-auto max-w-7xl px-4">
+            <Link
+              href={`/category/${categoryId}`}
+              className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              カテゴリに戻る
+            </Link>
+
+            <Card className="mx-auto max-w-2xl">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">📊 前回のテスト結果</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="rounded-lg bg-secondary/50 p-6">
+                  <div className="text-center mb-4">
+                    <p className="text-4xl font-bold text-primary">{previousResult.percentage}%</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {previousResult.correctCount}/{previousResult.totalQuestions}問正解
+                    </p>
+                  </div>
+                  <Progress value={previousResult.percentage} className="h-2" />
+                </div>
+
+                <div className="rounded-lg border p-4 bg-blue-50">
+                  <p className="font-medium text-lg mb-2">❌ 間違えた問題: {reviewCount}問</p>
+                  <p className="text-sm text-muted-foreground">
+                    前回間違えた{reviewCount}問を復習できます
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button
+                    className="w-full" size="lg"
+                    onClick={initializeReviewTest}
+                  >
+                    前回の間違い{reviewCount}問を復習 ({reviewDuration}分)
+                  </Button>
+                  <Button
+                    variant="outline" className="w-full" size="lg"
+                    onClick={initializeNewTest}
+                  >
+                    新規テスト開始 ({test!.totalQuestions}問/{test!.timeLimit}分)
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   // Submitting phase
   if (phase === "submitting") {
@@ -522,7 +632,9 @@ export default function CategoryTestPage() {
 
 
   // Test phase
-  const currentQ = test.questions[currentQuestion]
+  const questionCount = testMode === "review" ? reviewQuestionIndices.length : test.questions.length
+  const actualQuestionIndex = testMode === "review" ? reviewQuestionIndices[currentQuestion] : currentQuestion
+  const currentQ = test.questions[actualQuestionIndex]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -530,14 +642,17 @@ export default function CategoryTestPage() {
       <div className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{category.name} 修了テスト</span>
+            <span className="text-sm font-medium">
+              {category.name} 修了テスト
+              {testMode === "review" && <span className="ml-2 text-xs text-blue-600">(復習モード)</span>}
+            </span>
             <div className="flex items-center gap-4">
               <div className={`flex items-center gap-1 text-sm ${timeRemaining < 60 ? "text-red-500 font-bold" : ""}`}>
                 <Clock className="h-4 w-4" />
                 {formatTime(timeRemaining)}
               </div>
               <span className="text-sm text-muted-foreground">
-                {answeredCount}/{test.questions.length}問回答済
+                {answeredCount}/{questionCount}問回答済
               </span>
             </div>
           </div>
@@ -552,7 +667,7 @@ export default function CategoryTestPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    問題 {currentQuestion + 1} / {test.questions.length}
+                    問題 {currentQuestion + 1} / {questionCount}
                   </span>
                   <span className="text-xs text-muted-foreground">{currentQ.source}</span>
                 </div>
@@ -595,25 +710,41 @@ export default function CategoryTestPage() {
 
             {/* Question navigation */}
             <div className="mt-6 flex flex-wrap gap-2 justify-center">
-              {test.questions.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleNavigateQuestion(i)}
-                  className={`h-8 w-8 rounded-full text-xs font-medium transition-colors ${
-                    i === currentQuestion
-                      ? "bg-primary text-primary-foreground"
-                      : answers[i] >= 0
-                        ? "bg-green-100 text-green-700"
-                        : "bg-secondary text-muted-foreground"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              {testMode === "review"
+                ? reviewQuestionIndices.map((qIndex, navIndex) => (
+                    <button
+                      key={qIndex}
+                      onClick={() => handleNavigateQuestion(navIndex)}
+                      className={`h-8 w-8 rounded-full text-xs font-medium transition-colors ${
+                        navIndex === currentQuestion
+                          ? "bg-primary text-primary-foreground"
+                          : answers[navIndex] >= 0
+                            ? "bg-green-100 text-green-700"
+                            : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {qIndex + 1}
+                    </button>
+                  ))
+                : test.questions.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleNavigateQuestion(i)}
+                      className={`h-8 w-8 rounded-full text-xs font-medium transition-colors ${
+                        i === currentQuestion
+                          ? "bg-primary text-primary-foreground"
+                          : answers[i] >= 0
+                            ? "bg-green-100 text-green-700"
+                            : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
             </div>
 
             {/* Submit button */}
-            {answeredCount === test.questions.length && (
+            {answeredCount === questionCount && (
               <div className="mt-6 text-center">
                 <Button size="lg" onClick={handleSubmitTest}>
                   テストを提出する
