@@ -9,7 +9,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export const revalidate = 3600
+export const revalidate = 0
 
 export async function generateStaticParams() {
   const supabase = createStaticClient()
