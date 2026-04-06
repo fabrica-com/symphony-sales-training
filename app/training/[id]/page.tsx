@@ -17,7 +17,7 @@ interface TrainingPageProps {
   params: Promise<{ id: string }>
 }
 
-export const revalidate = 3600
+export const revalidate = 0
 
 export async function generateStaticParams() {
   const supabase = createStaticClient()

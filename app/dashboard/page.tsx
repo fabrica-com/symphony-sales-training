@@ -3,7 +3,7 @@ import { createStaticClient } from "@/lib/supabase/static"
 import DashboardClient from "./dashboard-client"
 import type { Category } from "@/lib/training-data"
 
-export const revalidate = 3600
+export const revalidate = 0
 
 export default async function DashboardPage() {
   const supabase = createStaticClient()
